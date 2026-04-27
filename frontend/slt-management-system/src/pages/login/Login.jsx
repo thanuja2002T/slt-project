@@ -2,18 +2,34 @@ import "./Login.css";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-export default function Login() {
+export default function RoleSelect() {
   const [role, setRole] = useState("admin");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [teamInput, setTeamInput] = useState("");
 
   const navigate = useNavigate();
 
+  const teams = [
+    "JA1 Colombo",
+    "JA11 Colombo",
+    "JA2 Jaffna",
+    "JA3 Kandy"
+  ];
+
+  // ✅ FILTER ONLY WHEN TYPING
+  const filteredTeams =
+    teamInput.length > 0
+      ? teams.filter(team =>
+          team.toLowerCase().includes(teamInput.toLowerCase())
+        )
+      : [];
+
   const handleLogin = () => {
-    // later connect backend
     if (role === "admin") {
       navigate("/dashboard");
     } else {
+      if (!teamInput) return alert("Enter team name");
       navigate("/field");
     }
   };
@@ -34,6 +50,7 @@ export default function Login() {
 
         <p className="role-text">Select your role to continue</p>
 
+        {/* ROLE SELECT */}
         <div className="role-container">
           <div
             className={`role-card ${role === "admin" ? "active" : ""}`}
@@ -41,7 +58,6 @@ export default function Login() {
           >
             🛡️
             <h3>Admin</h3>
-            <p>Office / Supervisors</p>
           </div>
 
           <div
@@ -50,48 +66,65 @@ export default function Login() {
           >
             🔧
             <h3>Field</h3>
-            <p>Field Technicians</p>
           </div>
         </div>
 
         <div className="form-area">
 
-          {/* ✅ USERNAME */}
-          <div className="input-group">
-            <label>USERNAME</label>
-            <input
-              placeholder="Enter your username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-            />
-          </div>
+          {/* ADMIN FORM */}
+          {role === "admin" && (
+            <>
+              <div className="input-group">
+                <label>USERNAME</label>
+                <input
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                />
+              </div>
 
-          {/* PASSWORD */}
-          <div className="input-group">
-            <label>PASSWORD</label>
-            <input
-              type="password"
-              placeholder="Enter password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
+              <div className="input-group">
+                <label>PASSWORD</label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+            </>
+          )}
 
-          <div className="options">
-            <label>
-              <input type="checkbox" defaultChecked /> Remember me
-            </label>
-            <span className="forgot">Forgot password?</span>
-          </div>
+          {/* FIELD FORM */}
+          {role === "field" && (
+            <div className="input-group">
+              <label>TEAM NAME</label>
+              <input
+                placeholder="Type team..."
+                value={teamInput}
+                onChange={(e) => setTeamInput(e.target.value)}
+              />
+
+              {/* ✅ SHOW ONLY WHEN TYPING */}
+              {filteredTeams.length > 0 && (
+                <div className="suggestions">
+                  {filteredTeams.map((team, i) => (
+                    <div
+                      key={i}
+                      className="suggestion-item"
+                      onClick={() => setTeamInput(team)}
+                    >
+                      {team}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           <button className="login-btn" onClick={handleLogin}>
-            Sign In →
+            Continue →
           </button>
-        </div>
 
-        <p className="footer">
-          Having trouble? Contact your administrator
-        </p>
+        </div>
 
       </div>
     </div>

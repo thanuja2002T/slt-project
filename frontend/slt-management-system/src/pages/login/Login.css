@@ -3,6 +3,7 @@ body {
   font-family: "Segoe UI", sans-serif;
 }
 
+/* MAIN */
 .login-container {
   height: 100vh;
   display: flex;
@@ -13,39 +14,45 @@ body {
   color: white;
 }
 
+/* CENTER BOX */
 .login-content {
   width: 100%;
   max-width: 500px;
+  padding: 30px;
   text-align: center;
 }
 
+/* STATUS */
 .status {
   color: #22c97a;
   font-size: 12px;
   margin-bottom: 15px;
 }
 
+/* TITLE */
 .title {
-  font-size: 40px;
+  font-size: 42px;
   font-weight: bold;
-  margin-bottom: 10px;
 }
 
 .title span {
   color: #3b8ef0;
 }
 
+/* SUBTITLE */
 .subtitle {
   color: #aaa;
   font-size: 14px;
   margin-bottom: 30px;
 }
 
+/* ROLE TEXT */
 .role-text {
   margin-bottom: 15px;
   color: #bbb;
 }
 
+/* ROLE CARDS */
 .role-container {
   display: flex;
   gap: 15px;
@@ -71,19 +78,12 @@ body {
   background: #1a2335;
 }
 
-.role-card h3 {
-  margin: 8px 0;
-}
-
-.role-card p {
-  font-size: 12px;
-  color: #aaa;
-}
-
+/* FORM */
 .form-area {
   margin-top: 10px;
 }
 
+/* INPUT */
 .input-group {
   margin-bottom: 15px;
   text-align: left;
@@ -96,14 +96,21 @@ body {
 
 .input-group input {
   width: 100%;
-  padding: 12px;
+  padding: 14px;
   margin-top: 5px;
   background: #0e1219;
   border: 1px solid #2a2f3a;
   border-radius: 10px;
   color: white;
+  font-size: 14px;
 }
 
+.input-group input:focus {
+  border-color: #3b8ef0;
+  box-shadow: 0 0 8px #3b8ef055;
+}
+
+/* OPTIONS */
 .options {
   display: flex;
   justify-content: space-between;
@@ -116,10 +123,11 @@ body {
   cursor: pointer;
 }
 
+/* BUTTON */
 .login-btn {
   width: 100%;
   padding: 14px;
-  background: #3b8ef0;
+  background: linear-gradient(90deg, #3b8ef0, #4fa3ff);
   border: none;
   border-radius: 12px;
   color: white;
@@ -129,11 +137,32 @@ body {
 }
 
 .login-btn:hover {
-  background: #2a7de0;
+  transform: translateY(-2px);
 }
 
+/* FOOTER */
 .footer {
   margin-top: 20px;
   font-size: 11px;
   color: #777;
+}
+
+/* AUTOCOMPLETE */
+.suggestions {
+  background: #0e1219;
+  border: 1px solid #2a2f3a;
+  border-radius: 10px;
+  margin-top: 5px;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.suggestion-item {
+  padding: 10px;
+  cursor: pointer;
+  color: #ddd;
+}
+
+.suggestion-item:hover {
+  background: #1a2335;
 }

@@ -1,0 +1,88 @@
+body {
+  margin: 0;
+  font-family: "Segoe UI", sans-serif;
+}
+
+/* MAIN LAYOUT */
+.access-container {
+  display: flex;
+  height: 100vh;
+}
+
+/* LEFT SIDE */
+.left-panel {
+  flex: 1;
+  background: radial-gradient(circle at 30% 30%, #1a2235, #07090f);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 80px;
+  position: relative;
+}
+
+.left-panel h1 {
+  font-size: 48px;
+}
+
+.left-panel p {
+  color: #aaa;
+  margin-top: 10px;
+}
+
+/* GLOW EFFECT */
+.glow {
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  background: #3b8ef0;
+  filter: blur(120px);
+  opacity: 0.3;
+  bottom: 50px;
+  left: 50px;
+}
+
+/* RIGHT SIDE */
+.right-panel {
+  width: 400px;
+  background: #0e1219;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 40px;
+  color: white;
+}
+
+.right-panel h2 {
+  margin-bottom: 20px;
+}
+
+/* INPUT */
+.right-panel input {
+  padding: 14px;
+  border-radius: 10px;
+  border: 1px solid #2a2f3a;
+  background: #07090f;
+  color: white;
+  margin-bottom: 20px;
+  outline: none;
+}
+
+.right-panel input:focus {
+  border-color: #3b8ef0;
+}
+
+/* BUTTON */
+.right-panel button {
+  padding: 14px;
+  border: none;
+  border-radius: 10px;
+  background: #3b8ef0;
+  color: white;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.right-panel button:hover {
+  background: #2a7de0;
+}
