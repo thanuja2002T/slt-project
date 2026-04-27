@@ -1,0 +1,103 @@
+body {
+  margin: 0;
+  font-family: "Segoe UI", sans-serif;
+}
+
+/* LAYOUT */
+.admin-layout {
+  display: flex;
+}
+
+/* SIDEBAR */
+.sidebar {
+  width: 220px;
+  height: 100vh;
+  background: #0e1219;
+  color: white;
+  padding: 20px;
+}
+
+.logo {
+  margin-bottom: 20px;
+}
+
+.sidebar a {
+  display: block;
+  color: #aaa;
+  margin: 10px 0;
+  text-decoration: none;
+}
+
+.sidebar a:hover {
+  color: #3b8ef0;
+}
+
+/* DASHBOARD */
+.dashboard {
+  flex: 1;
+  padding: 30px;
+  background: #07090f;
+  color: white;
+}
+
+.page-title {
+  margin-bottom: 20px;
+}
+
+/* STAT CARDS */
+.stats {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.stat-card {
+  background: #161d2a;
+  padding: 20px;
+  border-radius: 12px;
+  flex: 1;
+}
+
+.stat-title {
+  color: #aaa;
+  font-size: 14px;
+}
+
+.stat-value {
+  font-size: 28px;
+}
+
+/* TABLE */
+.table-section {
+  background: #161d2a;
+  padding: 20px;
+  border-radius: 12px;
+}
+
+table {
+  width: 100%;
+  margin-top: 10px;
+  border-collapse: collapse;
+}
+
+th, td {
+  padding: 10px;
+  text-align: left;
+}
+
+th {
+  color: #888;
+  font-size: 12px;
+}
+
+.green {
+  color: #22c97a;
+}
+
+.yellow {
+  color: #f0b429;
+}
+
+.red {
+  color: #f04f4f;
+}

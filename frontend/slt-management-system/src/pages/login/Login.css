@@ -1,0 +1,139 @@
+body {
+  margin: 0;
+  font-family: "Segoe UI", sans-serif;
+}
+
+.login-container {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  background: radial-gradient(circle at 20% 20%, #1a2235, #0d1117);
+  color: white;
+}
+
+.login-content {
+  width: 100%;
+  max-width: 500px;
+  text-align: center;
+}
+
+.status {
+  color: #22c97a;
+  font-size: 12px;
+  margin-bottom: 15px;
+}
+
+.title {
+  font-size: 40px;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.title span {
+  color: #3b8ef0;
+}
+
+.subtitle {
+  color: #aaa;
+  font-size: 14px;
+  margin-bottom: 30px;
+}
+
+.role-text {
+  margin-bottom: 15px;
+  color: #bbb;
+}
+
+.role-container {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.role-card {
+  flex: 1;
+  background: #111827;
+  padding: 20px;
+  border-radius: 14px;
+  cursor: pointer;
+  border: 1px solid #2a2f3a;
+  transition: 0.3s;
+}
+
+.role-card:hover {
+  transform: translateY(-3px);
+}
+
+.role-card.active {
+  border: 2px solid #3b8ef0;
+  background: #1a2335;
+}
+
+.role-card h3 {
+  margin: 8px 0;
+}
+
+.role-card p {
+  font-size: 12px;
+  color: #aaa;
+}
+
+.form-area {
+  margin-top: 10px;
+}
+
+.input-group {
+  margin-bottom: 15px;
+  text-align: left;
+}
+
+.input-group label {
+  font-size: 11px;
+  color: #888;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 12px;
+  margin-top: 5px;
+  background: #0e1219;
+  border: 1px solid #2a2f3a;
+  border-radius: 10px;
+  color: white;
+}
+
+.options {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  margin-bottom: 20px;
+}
+
+.forgot {
+  color: #3b8ef0;
+  cursor: pointer;
+}
+
+.login-btn {
+  width: 100%;
+  padding: 14px;
+  background: #3b8ef0;
+  border: none;
+  border-radius: 12px;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.login-btn:hover {
+  background: #2a7de0;
+}
+
+.footer {
+  margin-top: 20px;
+  font-size: 11px;
+  color: #777;
+}
