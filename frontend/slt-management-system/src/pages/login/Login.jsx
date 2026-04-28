@@ -1,56 +1,79 @@
 import "./Login.css";
-import { useState } from "react";
+import { useState , useEffect  } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function RoleSelect() {
   const [role, setRole] = useState("admin");
-  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [teamInput, setTeamInput] = useState("");
+  const [error, setError] = useState(""); // ✅ NEW
 
   const navigate = useNavigate();
 
-  const teams = [
-    "JA1 Colombo",
-    "JA11 Colombo",
-    "JA2 Jaffna",
-    "JA3 Kandy"
-  ];
+  const teams = ["JA1 Colombo", "JA11 Colombo", "JA2 Jaffna", "JA3 Kandy"];
 
-  // ✅ FILTER ONLY WHEN TYPING
   const filteredTeams =
     teamInput.length > 0
-      ? teams.filter(team =>
+      ? teams.filter((team) =>
           team.toLowerCase().includes(teamInput.toLowerCase())
         )
       : [];
 
   const handleLogin = () => {
+    setError(""); // clear previous
+
     if (role === "admin") {
+      if (!password) {
+        setError("Enter password");
+        return;
+      }
+
+      if (password !== "1234") {
+        setError("Wrong password"); // ✅ NO alert
+        return;
+      }
+
       navigate("/dashboard");
     } else {
-      if (!teamInput) return alert("Enter team name");
+      if (!teamInput) {
+        setError("Enter team name");
+        return;
+      }
+
       navigate("/field");
     }
   };
 
+  useEffect(() => {
+  if (error) {
+    const timer = setTimeout(() => {
+      setError("");
+    }, 1000); 
+
+    return () => clearTimeout(timer);
+  }
+}, [error]);
+
   return (
     <div className="login-container">
-      <div className="login-content">
+
+      {/* 🔴 TOAST MESSAGE */}
+      {error && <div className="toast-error">{error}</div>}
+
+      {/* LEFT SIDE */}
+      <div className="left-panel">
+        <h1>WELCOME-SLT</h1>
+        <p>Field Performance Monitoring System</p>
+        <div className="glow"></div>
+      </div>
+
+      {/* RIGHT SIDE */}
+      <div className="right-panel">
 
         <div className="status">● System Online — v2.4.1</div>
 
-        <h1 className="title">
-          SLT<span>.</span>Perform
-        </h1>
+        <h2>Select your role</h2>
 
-        <p className="subtitle">
-          Sri Lanka Telecom · Field Performance Analysis System
-        </p>
-
-        <p className="role-text">Select your role to continue</p>
-
-        {/* ROLE SELECT */}
         <div className="role-container">
           <div
             className={`role-card ${role === "admin" ? "active" : ""}`}
@@ -69,64 +92,51 @@ export default function RoleSelect() {
           </div>
         </div>
 
-        <div className="form-area">
+        {/* ADMIN */}
+        {role === "admin" && (
+          <div className="input-group">
+            <label>PASSWORD</label>
+            <input
+              type="password"
+              placeholder="Enter admin password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+        )}
 
-          {/* ADMIN FORM */}
-          {role === "admin" && (
-            <>
-              <div className="input-group">
-                <label>USERNAME</label>
-                <input
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                />
+        {/* FIELD */}
+        {role === "field" && (
+          <div className="input-group">
+            <label>TEAM NAME</label>
+            <input
+              placeholder="Type team..."
+              value={teamInput}
+              onChange={(e) => setTeamInput(e.target.value)}
+            />
+
+            {filteredTeams.length > 0 && (
+              <div className="suggestions">
+                {filteredTeams.map((team, i) => (
+                  <div
+                    key={i}
+                    className="suggestion-item"
+                    onClick={() => setTeamInput(team)}
+                  >
+                    {team}
+                  </div>
+                ))}
               </div>
+            )}
+          </div>
+        )}
 
-              <div className="input-group">
-                <label>PASSWORD</label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-            </>
-          )}
-
-          {/* FIELD FORM */}
-          {role === "field" && (
-            <div className="input-group">
-              <label>TEAM NAME</label>
-              <input
-                placeholder="Type team..."
-                value={teamInput}
-                onChange={(e) => setTeamInput(e.target.value)}
-              />
-
-              {/* ✅ SHOW ONLY WHEN TYPING */}
-              {filteredTeams.length > 0 && (
-                <div className="suggestions">
-                  {filteredTeams.map((team, i) => (
-                    <div
-                      key={i}
-                      className="suggestion-item"
-                      onClick={() => setTeamInput(team)}
-                    >
-                      {team}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          <button className="login-btn" onClick={handleLogin}>
-            Continue →
-          </button>
-
-        </div>
+        <button className="login-btn" onClick={handleLogin}>
+          Continue →
+        </button>
 
       </div>
     </div>
   );
 }
+

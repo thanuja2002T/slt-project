@@ -86,3 +86,47 @@ body {
 .right-panel button:hover {
   background: #2a7de0;
 }
+
+/* TOAST MESSAGE */
+.toast-error {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+
+  background: #ff3b3b;
+  color: white;
+  padding: 14px 20px;
+  border-radius: 10px;
+
+  font-size: 14px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+
+  /* 👇 animation */
+  opacity: 0;
+  transform: translateX(100px);
+  animation: slideIn 0.5s ease forwards, fadeOut 0.5s ease 4.5s forwards;
+}
+
+/* ENTER */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* EXIT */
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100px);
+  }
+}

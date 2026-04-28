@@ -1,25 +1,48 @@
 import "./Access.css";
-import { useState } from "react";
+import { useState,useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function Access() {
   const [password, setPassword] = useState("");
+  const [error, setError] = useState(""); // ✅ NEW
   const navigate = useNavigate();
 
   const handleAccess = () => {
-    if (password === "1234") {
-      navigate("/role");
-    } else {
-      alert("Wrong password");
+    setError(""); // clear old
+
+    if (!password) {
+      setError("Enter password");
+      return;
     }
+
+    if (password !== "1234") {
+      setError("Wrong password"); // ❌ no alert
+      return;
+    }
+
+    navigate("/role");
   };
+
+
+    useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        setError("");
+      }, 1000); 
+  
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
 
   return (
     <div className="access-container">
 
+      {/* 🔴 TOAST */}
+      {error && <div className="toast-error">{error}</div>}
+
       {/* LEFT SIDE */}
       <div className="left-panel">
-        <h1>SLT.Perform</h1>
+        <h1>WELCOME-SLT</h1>
         <p>Field Performance Monitoring System</p>
         <div className="glow"></div>
       </div>

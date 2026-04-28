@@ -1,71 +1,89 @@
+/* RESET */
 body {
   margin: 0;
   font-family: "Segoe UI", sans-serif;
 }
 
-/* MAIN */
+/* MAIN SPLIT */
 .login-container {
-  height: 100vh;
   display: flex;
-  justify-content: center;
-  align-items: center;
+  height: 100vh;
+}
 
-  background: radial-gradient(circle at 20% 20%, #1a2235, #0d1117);
+/* LEFT SIDE */
+.left-panel {
+  flex: 1;
+  background: radial-gradient(circle at 30% 30%, #1a2235, #07090f);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 80px;
+  position: relative;
+}
+
+.left-panel h1 {
+  font-size: 48px;
+  margin: 0;
+}
+
+.left-panel p {
+  color: #aaa;
+  margin-top: 10px;
+}
+
+/* GLOW */
+.glow {
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  background: #3b8ef0;
+  filter: blur(120px);
+  opacity: 0.3;
+  bottom: 50px;
+  left: 50px;
+}
+
+/* RIGHT SIDE */
+.right-panel {
+  flex: 1;
+  background: #0e1219;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;              /* ✅ center content */
+  padding: 60px;
   color: white;
 }
 
-/* CENTER BOX */
-.login-content {
+/* FORM WRAPPER (VERY IMPORTANT) */
+.right-panel > * {
   width: 100%;
-  max-width: 500px;
-  padding: 30px;
-  text-align: center;
+  max-width: 420px;                /* ✅ controls width */
 }
 
 /* STATUS */
 .status {
   color: #22c97a;
   font-size: 12px;
-  margin-bottom: 15px;
+  margin-bottom: 10px;
 }
 
-/* TITLE */
-.title {
-  font-size: 42px;
-  font-weight: bold;
-}
-
-.title span {
-  color: #3b8ef0;
-}
-
-/* SUBTITLE */
-.subtitle {
-  color: #aaa;
-  font-size: 14px;
-  margin-bottom: 30px;
-}
-
-/* ROLE TEXT */
-.role-text {
-  margin-bottom: 15px;
-  color: #bbb;
-}
-
-/* ROLE CARDS */
+/* ROLE */
 .role-container {
   display: flex;
   gap: 15px;
-  margin-bottom: 30px;
+  margin: 20px 0;
 }
 
 .role-card {
   flex: 1;
-  background: #111827;
   padding: 20px;
+  background: #111827;
   border-radius: 14px;
   cursor: pointer;
   border: 1px solid #2a2f3a;
+  text-align: center;
   transition: 0.3s;
 }
 
@@ -78,61 +96,47 @@ body {
   background: #1a2335;
 }
 
-/* FORM */
-.form-area {
-  margin-top: 10px;
-}
-
-/* INPUT */
+/* INPUT GROUP */
 .input-group {
-  margin-bottom: 15px;
-  text-align: left;
+  margin-top: 15px;
+  width: 100%;                    /* ✅ force full width */
 }
 
 .input-group label {
-  font-size: 11px;
+  font-size: 12px;
   color: #888;
 }
 
+/* INPUT */
 .input-group input {
   width: 100%;
   padding: 14px;
   margin-top: 5px;
-  background: #0e1219;
+  background: #07090f;
   border: 1px solid #2a2f3a;
   border-radius: 10px;
   color: white;
   font-size: 14px;
+  box-sizing: border-box;         /* ✅ prevents overflow */
 }
 
 .input-group input:focus {
   border-color: #3b8ef0;
-  box-shadow: 0 0 8px #3b8ef055;
-}
-
-/* OPTIONS */
-.options {
-  display: flex;
-  justify-content: space-between;
-  font-size: 12px;
-  margin-bottom: 20px;
-}
-
-.forgot {
-  color: #3b8ef0;
-  cursor: pointer;
+  box-shadow: 0 0 6px #3b8ef055;
 }
 
 /* BUTTON */
 .login-btn {
-  width: 100%;
+  width: 100%;                    /* ✅ SAME WIDTH */
+  margin-top: 20px;
   padding: 14px;
-  background: linear-gradient(90deg, #3b8ef0, #4fa3ff);
   border: none;
   border-radius: 12px;
+  background: linear-gradient(90deg, #3b8ef0, #4fa3ff);
   color: white;
   font-size: 16px;
   cursor: pointer;
+  box-sizing: border-box;         /* ✅ match input */
   transition: 0.2s;
 }
 
@@ -140,29 +144,63 @@ body {
   transform: translateY(-2px);
 }
 
-/* FOOTER */
-.footer {
-  margin-top: 20px;
-  font-size: 11px;
-  color: #777;
-}
-
 /* AUTOCOMPLETE */
 .suggestions {
-  background: #0e1219;
-  border: 1px solid #2a2f3a;
+  background: #111;
   border-radius: 10px;
   margin-top: 5px;
-  max-height: 150px;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .suggestion-item {
   padding: 10px;
   cursor: pointer;
-  color: #ddd;
 }
 
 .suggestion-item:hover {
   background: #1a2335;
+}
+
+/* TOAST MESSAGE */
+.toast-error {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+
+  background: #ff3b3b;
+  color: white;
+  padding: 14px 20px;
+  border-radius: 10px;
+
+  font-size: 14px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+
+  /* 👇 animation */
+  opacity: 0;
+  transform: translateX(100px);
+  animation: slideIn 0.5s ease forwards, fadeOut 0.5s ease 4.5s forwards;
+}
+
+/* ENTER */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* EXIT */
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100px);
+  }
 }
