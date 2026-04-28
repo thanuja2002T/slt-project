@@ -10,7 +10,7 @@ export default function RoleSelect() {
 
   const navigate = useNavigate();
 
-  const teams = ["JA1 Colombo", "JA11 Colombo", "JA2 Jaffna", "JA3 Kandy"];
+  const teams = ["JA-01", "JA-02", "JA-03", "JA-04", "JA-05", "JA-06", "JA-07", "JA-08", "JA-09", "JA-10", "JA-11", "JA-12", "JA-13", "JA-14", "JA-15", "JA-16", "JA-17", "JA-18"];
 
   const filteredTeams =
     teamInput.length > 0

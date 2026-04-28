@@ -1,0 +1,110 @@
+/* MAIN */
+.fault-container {
+  padding: 40px;
+  color: white;
+  background: #0b0f1a;
+  min-height: 100vh;
+}
+
+/* TITLE */
+.fault-container h1 {
+  font-size: 32px;
+  margin-bottom: 20px;
+}
+
+/* INFO BOX */
+.info-box {
+  margin: 20px 0;
+  padding: 18px;
+  background: #111827;
+  border-radius: 12px;
+  border: 1px solid #1f2937;
+  box-shadow: 0 0 20px rgba(0,0,0,0.3);
+}
+
+/* FAULT BOX */
+.fault-box {
+  margin-top: 30px;
+  padding: 25px;
+  background: #0f172a;
+  border-radius: 14px;
+  border: 1px solid #1f2937;
+  text-align: center;
+}
+
+/* FAULT TITLE */
+.fault-box h2 {
+  margin-bottom: 20px;
+  font-size: 24px;
+}
+
+/* BUTTON GROUP */
+.btn-group {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+/* COMMON BUTTON */
+.action-btn,
+.finish-btn {
+  padding: 12px 22px;
+  border: none;
+  border-radius: 10px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  font-weight: 500;
+}
+
+/* COMPLETED BUTTON */
+.action-btn {
+  background: linear-gradient(90deg, #3b8ef0, #4fa3ff);
+}
+
+.action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 10px rgba(59,142,240,0.6);
+}
+
+/* FINISH BUTTON */
+.finish-btn {
+  background: linear-gradient(90deg, #c93322, #ff5c4d);
+}
+
+.finish-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 10px rgba(255,92,77,0.6);
+}
+
+/* THANK YOU BOX */
+.thank-box {
+  margin-top: 40px;
+  padding: 30px;
+  background: #111827;
+  border-radius: 14px;
+  text-align: center;
+  border: 1px solid #1f2937;
+  animation: fadeIn 0.5s ease;
+}
+
+.thank-box h2 {
+  color: #22c97a;
+  margin-bottom: 10px;
+}
+
+.thank-box p {
+  color: #aaa;
+}
+
+/* ANIMATION */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
