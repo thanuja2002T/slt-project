@@ -2,50 +2,76 @@
 body {
   margin: 0;
   font-family: "Segoe UI", sans-serif;
+  background: #0b0f1a;
+  color: white;
 }
 
-/* MAIN CONTAINER */
-.field-container {
-  padding: 40px;
-  background: #0e1219;
-  color: white;
+/* MAIN LAYOUT */
+.field-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* 50-50 split */
   min-height: 100vh;
 }
 
-/* TITLE */
-.field-container h1 {
+/* LEFT SIDE (FORM) */
+.top-section {
+  padding: 60px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-right: 1px solid #1f2937;
+}
+
+.top-section h1 {
   margin-bottom: 30px;
+}
+
+/* RIGHT SIDE (FAULT) */
+.bottom-section {
+  display: flex;
+  flex-direction: column;            /* ✅ FIX */
+  align-items: center;               /* center horizontally */
+  justify-content: center;           /* center vertically */
+  gap: 20px;                         /* space between info + fault */
+  padding: 60px;
+}
+
+/* FORM BOX */
+.form-box {
+  background: #111827;
+  padding: 30px;
+  border-radius: 16px;
+  border: 1px solid #1f2937;
+  max-width: 420px;
+  width: 100%;
 }
 
 /* INPUT GROUP */
 .input-group {
-  margin-bottom: 25px;
-  max-width: 420px;
-  position: relative; /* ✅ important for dropdown */
+  margin-bottom: 20px;
+  position: relative;
 }
 
-/* LABEL */
 .input-group label {
   font-size: 12px;
-  color: #aaa;
+  color: #9ca3af;
 }
 
 /* INPUT */
 .input-group input {
   width: 100%;
-  padding: 12px;
-  margin-top: 5px;
+  padding: 13px;
+  margin-top: 6px;
   background: #07090f;
   border: 1px solid #2a2f3a;
-  border-radius: 10px;
+  border-radius: 12px;
   color: white;
   outline: none;
-  box-sizing: border-box;
 }
 
 .input-group input:focus {
   border-color: #3b8ef0;
-  box-shadow: 0 0 6px #3b8ef055;
+  box-shadow: 0 0 10px rgba(59, 142, 240, 0.4);
 }
 
 /* DROPDOWN */
@@ -53,12 +79,12 @@ body {
   position: absolute;
   width: 100%;
   background: #111827;
-  border-radius: 10px;
-  margin-top: 5px;
+  border-radius: 12px;
+  margin-top: 6px;
   max-height: 150px;
   overflow-y: auto;
   border: 1px solid #2a2f3a;
-  z-index: 100; /* ✅ fixes hidden issue */
+  z-index: 100;
 }
 
 .suggestion-item {
@@ -70,21 +96,18 @@ body {
   background: #1a2335;
 }
 
-/* SELECTED MEMBERS */
+/* MEMBERS */
 .selected-members {
-  margin-top: 12px;
+  margin-top: 10px;
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
 }
 
-/* CHIP */
 .member-chip {
   background: #1a2335;
-  color: #fff;
   padding: 6px 12px;
   border-radius: 20px;
-  font-size: 13px;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -93,22 +116,148 @@ body {
 .member-chip span {
   color: #ff4d4d;
   cursor: pointer;
-  font-weight: bold;
 }
 
-/* SUBMIT BUTTON */
+/* BUTTON */
 .submit-btn {
   margin-top: 20px;
-  padding: 14px 20px;
-  border: none;
+  padding: 14px;
+  width: 180px;
   border-radius: 12px;
+  border: none;
   background: linear-gradient(90deg, #3b8ef0, #4fa3ff);
   color: white;
-  font-size: 15px;
   cursor: pointer;
-  transition: 0.2s;
 }
 
 .submit-btn:hover {
   transform: translateY(-2px);
+  box-shadow: 0 0 10px rgba(59, 142, 240, 0.5);
+}
+
+/* PLACEHOLDER */
+.placeholder {
+  color: #6b7280;
+}
+
+/* INFO BOX (TOP OF FAULT) */
+.info-box {
+  background: #111827;
+  padding: 15px 20px;
+  border-radius: 12px;
+  border: 1px solid #1f2937;
+  width: 100%;
+  max-width: 360px;
+}
+
+/* FAULT BOX */
+.fault-box {
+  background: #111827;
+  padding: 40px;
+  border-radius: 16px;
+  text-align: center;
+  width: 360px;
+  border: 1px solid #1f2937;
+}
+
+/* BUTTON GROUP */
+.btn-group {
+  margin-top: 20px;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+/* ACTION BUTTON */
+.action-btn {
+  padding: 12px 20px;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(90deg, #3b8ef0, #4fa3ff);
+  color: white;
+  cursor: pointer;
+}
+
+/* FINISH BUTTON */
+.finish-btn {
+  padding: 12px 20px;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(90deg, #c93322, #ff5c4d);
+  color: white;
+  cursor: pointer;
+}
+
+/* THANK YOU BOX */
+.thank-box {
+  background: #111827;
+  padding: 40px;
+  border-radius: 16px;
+  text-align: center;
+  border: 1px solid #1f2937;
+}
+
+.thank-box h2 {
+  color: #22c97a;
+}
+
+/* ========================= */
+/* 📱 MOBILE VIEW */
+/* ========================= */
+@media (max-width: 768px) {
+  .field-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .top-section {
+    border-right: none;
+    border-bottom: 1px solid #1f2937;
+
+    /* ✅ IMPORTANT FIX */
+    display: flex;
+    align-items: center;      /* horizontal center */
+    justify-content: center;  /* vertical center */
+    text-align: center;
+    padding: 30px 20px;
+  }
+
+  .form-box {
+    margin: 0 auto;
+    width: 100%;
+    max-width: 420px;
+  }
+
+  .bottom-section {
+    padding: 30px;
+    align-items: center;
+  }
+
+  .fault-box {
+    width: 100%;
+  }
+
+  .info-box {
+    text-align: center;
+  }
+
+  /* ✅ FIX FAULT BOX SIZE */
+  .fault-box {
+    width: 90%;            /* not full width */
+    max-width: 320px;      /* limit size */
+    padding: 25px;         /* reduce padding */
+    margin: 0 auto;        /* center */
+  }
+
+  /* ✅ BUTTONS SMALLER */
+  .action-btn,
+  .finish-btn {
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+
+  /* ✅ BUTTON GAP ADJUST */
+  .btn-group {
+    gap: 10px;
+    flex-wrap: wrap;       /* prevents overflow */
+  }
 }
