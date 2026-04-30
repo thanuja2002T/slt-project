@@ -104,57 +104,231 @@ body {
   z-index: 1000;
 }
 
-/* DASHBOARD (FULL WIDTH 🔥) */
-.dashboard {
-  width: 100%;
-  padding: 80px 30px 30px 30px; /* space for menu */
-  overflow-y: auto;
+/* ============================= */
+/* 🔥 ADMIN DASHBOARD UPGRADE */
+/* ============================= */
+
+.admin-dashboard {
+  color: white;
 }
 
-/* BLUR */
-.dashboard.blur {
-  filter: blur(3px);
-  pointer-events: none;
-}
-
-/* TITLE */
-.page-title {
-  font-size: 28px;
+/* HEADER */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 25px;
 }
 
-/* CARD */
-.card {
+.header p {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.header-actions button {
+  margin-left: 10px;
+}
+
+
+/* BUTTONS ENHANCE (non-breaking) */
+.btn-primary {
+  background: linear-gradient(90deg, #3b82f6, #4fa3ff);
+  border: none;
+}
+
+/* 🔥 EXPORT CSV BUTTON */
+.btn-outline {
+  background: transparent;
+  border: 1px solid #374151;
+  color: #ffffff;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+/* HOVER EFFECT */
+.btn-outline:hover {
+  background: #006aff;
+  border-color: #0569f6;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+/* ACTIVE CLICK */
+.btn-outline:active {
+  transform: scale(0.97);
+}
+
+/* OPTIONAL: ICON STYLE */
+.btn-outline::before {
+  content: "⬇ ";
+  font-size: 12px;
+}
+
+/* STATS GRID */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+/* STAT CARD UPGRADE */
+.stat-card {
   background: #111827;
   padding: 20px;
-  border-radius: 12px;
-  margin-top: 20px;
-}
-
-/* TABLE */
-.table-section {
-  background: #111827;
-  padding: 25px;
   border-radius: 14px;
+  border: 1px solid #1f2937;
+  transition: 0.3s;
 }
 
+.stat-card:hover {
+  transform: translateY(-4px);
+  border-color: #374151;
+}
+
+.stat-card h4 {
+  color: #9ca3af;
+  font-size: 13px;
+}
+
+.stat-card h2 {
+  margin: 8px 0;
+}
+
+/* COLORS (KEEP SAME BUT ENHANCED LOOK) */
+.blue { border-top: 3px solid #3b82f6; }
+.green { border-top: 3px solid #22c55e; }
+.orange { border-top: 3px solid #f59e0b; }
+.purple { border-top: 3px solid #8b5cf6; }
+
+/* MAIN GRID */
+.main-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+  margin-top: 25px;
+}
+
+/* RIGHT PANEL */
+.right-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* TABLE ENHANCE */
 table {
-  width: 100%;
-  border-collapse: collapse;
+  margin-top: 12px;
 }
 
 th {
-  text-align: left;
-  color: #888;
-  font-size: 13px;
-  padding-bottom: 10px;
+  color: #6b7280;
+  font-size: 12px;
 }
 
-td {
-  padding: 10px 0;
+tr {
+  border-bottom: 1px solid #1f2937;
 }
 
-/* COLORS */
-.green { color: #22c97a; }
-.yellow { color: #facc15; }
-.red { color: #ff4d4d; }
+/* TAG */
+.tag {
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.tag.blue { background: #1e3a8a; }
+.tag.purple { background: #4c1d95; }
+
+/* STATUS BADGES */
+.status {
+  padding: 5px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+}
+
+.status.good { background: #064e3b; }
+.status.warn { background: #78350f; }
+.status.bad { background: #7f1d1d; }
+
+/* TEXT COLORS (SAFE EXTENSION) */
+.green-text { color: #22c55e; }
+.yellow-text { color: #f59e0b; }
+.red-text { color: #ef4444; }
+
+/* ACTION BUTTONS */
+.action-btn {
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px;
+  background: #1f2937;
+  border: none;
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.action-btn:hover {
+  background: #374151;
+}
+
+.action-btn.primary {
+  background: linear-gradient(90deg, #3b82f6, #4fa3ff);
+}
+
+/* PROGRESS BARS */
+.bar {
+  background: #1f2937;
+  height: 8px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+.bar div {
+  height: 100%;
+  border-radius: 6px;
+}
+
+.bar.blue div { background: #3b82f6; }
+.bar.purple div { background: #8b5cf6; }
+.bar.green div { background: #22c55e; }
+
+
+/* 🔥 RIGHT SIDE OUTER SPACING FIX */
+.right-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 10px; /* 🔥 this is what you're missing */
+  border-radius: 18px; /* 🔥 more curve */
+}
+
+
+
+@media (max-width: 768px) {
+
+  .stats {
+    grid-template-columns: 1fr 1fr;
+  }
+  /* 🔥 make layout single column */
+  .main-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* 🔥 center the right panel */
+  .right-panel {
+    align-items: center;
+    width: 100%;
+  }
+
+  /* 🔥 center each card */
+  .right-panel .card {
+    width: 100%;
+    max-width: 360px;
+    margin: 0 auto; /* 🔥 THIS centers it */
+  }
+
+}
