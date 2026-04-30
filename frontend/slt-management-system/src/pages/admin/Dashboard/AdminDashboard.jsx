@@ -46,55 +46,57 @@ export default function AdminDashboard() {
       {/* MAIN GRID */}
       <div className="main-grid">
 
-        {/* TABLE */}
+        {/* LEFT TABLE */}
         <div className="card table-card">
           <h3>Team Performance Overview</h3>
 
-          <table>
-            <thead>
-              <tr>
-                <th>Team</th>
-                <th>Members</th>
-                <th>Type</th>
-                <th>Assigned</th>
-                <th>Attended</th>
-                <th>Completion</th>
-                <th>Status</th>
-              </tr>
-            </thead>
+          <div className="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Team</th>
+                  <th>Members</th>
+                  <th>Type</th>
+                  <th>Assigned</th>
+                  <th>Attended</th>
+                  <th>Completion</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
 
-            <tbody>
-              <tr>
-                <td>JA1</td>
-                <td>001,005</td>
-                <td><span className="tag blue">FTTH</span></td>
-                <td>6</td>
-                <td>6</td>
-                <td className="green-text">100%</td>
-                <td><span className="status good">On track</span></td>
-              </tr>
+              <tbody>
+                <tr>
+                  <td>JA1</td>
+                  <td>001,005</td>
+                  <td><span className="tag blue">FTTH</span></td>
+                  <td>6</td>
+                  <td>6</td>
+                  <td className="green-text">100%</td>
+                  <td><span className="status good">On track</span></td>
+                </tr>
 
-              <tr>
-                <td>JA2</td>
-                <td>003,004</td>
-                <td><span className="tag purple">PSTN</span></td>
-                <td>6</td>
-                <td>5</td>
-                <td className="yellow-text">84%</td>
-                <td><span className="status warn">Review</span></td>
-              </tr>
+                <tr>
+                  <td>JA2</td>
+                  <td>003,004</td>
+                  <td><span className="tag purple">PSTN</span></td>
+                  <td>6</td>
+                  <td>5</td>
+                  <td className="yellow-text">84%</td>
+                  <td><span className="status warn">Review</span></td>
+                </tr>
 
-              <tr>
-                <td>JA4</td>
-                <td>007,008</td>
-                <td><span className="tag purple">PSTN</span></td>
-                <td>8</td>
-                <td>5</td>
-                <td className="red-text">63%</td>
-                <td><span className="status bad">Behind</span></td>
-              </tr>
-            </tbody>
-          </table>
+                <tr>
+                  <td>JA4</td>
+                  <td>007,008</td>
+                  <td><span className="tag purple">PSTN</span></td>
+                  <td>8</td>
+                  <td>5</td>
+                  <td className="red-text">63%</td>
+                  <td><span className="status bad">Behind</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {/* RIGHT SIDE */}
@@ -126,6 +128,54 @@ export default function AdminDashboard() {
 
         </div>
       </div>
+
+      {/* 🔻 FULL WIDTH ACTIVITY */}
+      <div className="card activity-card">
+        <h3>Recent Activity Log</h3>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Technician</th>
+              <th>Team</th>
+              <th>Action</th>
+              <th>Fault Type</th>
+              <th>Vehicle</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr>
+              <td>09:14</td>
+              <td>JA1 • Member 001</td>
+              <td><span className="tag blue">FTTH</span></td>
+              <td>Vehicle Out</td>
+              <td>—</td>
+              <td>WP-AB-1234</td>
+            </tr>
+
+            <tr>
+              <td>10:32</td>
+              <td>JA1 • Member 001</td>
+              <td><span className="tag blue">FTTH</span></td>
+              <td>1st Fault Attended</td>
+              <td>FTTH</td>
+              <td>WP-AB-1234</td>
+            </tr>
+
+            <tr>
+              <td>11:05</td>
+              <td>JA2 • Member 003</td>
+              <td><span className="tag purple">PSTN</span></td>
+              <td>Vehicle Out</td>
+              <td>—</td>
+              <td>WP-CD-5678</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
     </div>
   );
 }

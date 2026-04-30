@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import Sidebar from "../components/Sidebar";
-import "../pages/Admin/AdminDashboard.css";
+import "../pages/Admin/Dashboard/AdminDashboard.css";
 
 export default function AdminLayout({ children }) {
   const [open, setOpen] = useState(false);
