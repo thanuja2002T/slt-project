@@ -13,6 +13,38 @@ body {
   min-height: 100vh;
 }
 
+/* 🔙 BACK BUTTON */
+.back-btn {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+
+  background: #0f172a; /* black-ish */
+  color: white;
+
+  border: 1px solid #1f2937;
+  padding: 8px 14px;
+  border-radius: 8px;
+
+  cursor: pointer;
+  font-size: 14px;
+
+  transition: all 0.25s ease;
+  z-index: 1000;
+}
+
+/* 🔥 HOVER EFFECT */
+.back-btn:hover {
+  background: linear-gradient(90deg, #3b82f6, #4fa3ff);
+  border-color: #3b82f6;
+  transform: translateY(-1px);
+}
+
+/* CLICK */
+.back-btn:active {
+  transform: scale(0.96);
+}
+
 /* LEFT SIDE (FORM) */
 .top-section {
   padding: 60px;

@@ -5,11 +5,11 @@ import Login from "./pages/login/Login";
 
 import AdminLayout from "./layout/AdminLayout";
 
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import DailyUpdate from "./pages/admin/DailyUpdate";
-import Summary from "./pages/admin/Summary";
-import Analysis from "./pages/admin/Analysis";
-import Notifications from "./pages/Admin/Notifications";
+import AdminDashboard from "./pages/admin/Dashboard/AdminDashboard";
+import DailyUpdate from "./pages/admin/DailyUpdate/DailyUpdate";
+import Summary from "./pages/admin/Summary/Summary";
+import Analysis from "./pages/admin/Analysis/Analysis";
+import Notifications from "./pages/admin/Notification/Notifications";
 
 import FieldApp from "./pages/Filed/FieldApp";
 

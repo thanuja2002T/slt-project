@@ -1,7 +1,12 @@
 import "./FieldApp.css";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { IoArrowBack } from "react-icons/io5";
 
 export default function FieldApp() {
+
+  const navigate = useNavigate(); 
+
   const [vehicleInput, setVehicleInput] = useState("");
   const [memberInput, setMemberInput] = useState("");
   const [selectedMembers, setSelectedMembers] = useState([]);
@@ -52,6 +57,11 @@ export default function FieldApp() {
 
   return (
     <div className="field-layout">
+
+      {/* 🔙 BACK BUTTON */}
+      <button className="back-btn" onClick={() => navigate("/role")}>
+        <IoArrowBack />
+      </button>
 
       {/* 🔝 TOP SECTION */}
       <div className="top-section">
