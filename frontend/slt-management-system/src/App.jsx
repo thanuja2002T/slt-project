@@ -9,69 +9,40 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import DailyUpdate from "./pages/admin/DailyUpdate";
 import Summary from "./pages/admin/Summary";
 import Analysis from "./pages/admin/Analysis";
-import Notifications from "./pages/admin/Notifications";
+import Notifications from "./pages/Admin/Notifications";
 
-import FieldApp from "./pages/FieldApp";
-import FieldFaults from "./pages/FieldFaults"; // ✅ IMPORT HERE
+import FieldApp from "./pages/Filed/FieldApp";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
 
-        {/* 🔐 ACCESS */}
         <Route path="/" element={<Access />} />
         <Route path="/role" element={<Login />} />
 
-        {/* 🔥 ADMIN ROUTES (with Sidebar Layout) */}
-        <Route
-          path="/dashboard"
-          element={
-            <AdminLayout>
-              <AdminDashboard />
-            </AdminLayout>
-          }
-        />
+        {/* 🔥 ADMIN ROUTES */}
+        <Route path="/dashboard" element={
+          <AdminLayout><AdminDashboard /></AdminLayout>
+        } />
 
-        <Route
-          path="/daily"
-          element={
-            <AdminLayout>
-              <DailyUpdate />
-            </AdminLayout>
-          }
-        />
+        <Route path="/daily" element={
+          <AdminLayout><DailyUpdate /></AdminLayout>
+        } />
 
-        <Route
-          path="/summary"
-          element={
-            <AdminLayout>
-              <Summary />
-            </AdminLayout>
-          }
-        />
+        <Route path="/summary" element={
+          <AdminLayout><Summary /></AdminLayout>
+        } />
 
-        <Route
-          path="/analysis"
-          element={
-            <AdminLayout>
-              <Analysis />
-            </AdminLayout>
-          }
-        />
+        <Route path="/analysis" element={
+          <AdminLayout><Analysis /></AdminLayout>
+        } />
 
-        <Route
-          path="/notifications"
-          element={
-            <AdminLayout>
-              <Notifications />
-            </AdminLayout>
-          }
-        />
+        <Route path="/notifications" element={
+          <AdminLayout><Notifications /></AdminLayout>
+        } />
 
-        {/* ⚙️ FIELD ROUTES */}
         <Route path="/field" element={<FieldApp />} />
-        <Route path="/field-faults" element={<FieldFaults />} />
 
       </Routes>
     </BrowserRouter>
