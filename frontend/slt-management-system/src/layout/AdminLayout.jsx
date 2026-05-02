@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import Sidebar from "../components/Sidebar";
-import "../pages/Admin/Dashboard/AdminDashboard.css";
+import "../pages/admin/Dashboard/AdminDashboard.css";
 
 export default function AdminLayout({ children }) {
   const [open, setOpen] = useState(false);
@@ -40,9 +40,11 @@ export default function AdminLayout({ children }) {
       <Sidebar open={open} setOpen={setOpen} />
 
       {/* ☰ BUTTON */}
-      <div className="menu-btn" onClick={() => setOpen(!open)}>
-        ☰
+     {!open && (
+      <div className="menu-btn" onClick={() => setOpen(true)}>
+      ☰
       </div>
+     )}
 
       {/* OVERLAY */}
       {open && <div className="overlay" onClick={() => setOpen(false)}></div>}
