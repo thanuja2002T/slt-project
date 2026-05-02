@@ -1,67 +1,62 @@
+/* 🔥 PAGE LAYOUT FIX */
 .daily-page {
   color: white;
-  padding: 20px;
+  padding: 25px;
+  max-width: 1200px;
 }
 
-/* TEAM ROW */
+/* TITLE */
+.daily-page h1 {
+  margin-bottom: 20px;
+}
+
+/* 🔥 TEAM ROW FIX */
 .team-row {
   margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.team-row label {
-  display: block;
-  margin-bottom: 6px;
-  font-weight: bold;
-}
-
-/* MULTI SELECT */
-.multi-select {
-  position: relative;
+/* INPUT FULL WIDTH */
+.multi-select input {
+  width: 250px;
+  padding: 8px;
+  border-radius: 6px;
+  border: none;
+  background: #111827;
+  color: white;
 }
 
 /* TAGS */
 .tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
-  margin-bottom: 5px;
+  gap: 6px;
 }
 
 .tag {
-  background: #2563eb;
+  background: #1f2937;
   padding: 4px 8px;
   border-radius: 6px;
   font-size: 12px;
 }
 
 .tag button {
-  margin-left: 6px;
+  margin-left: 5px;
   background: none;
   border: none;
-  color: white;
+  color: red;
   cursor: pointer;
-}
-
-/* INPUT */
-.multi-select input {
-  width: 100%;
-  padding: 6px;
-  background: #111827;
-  border: 1px solid #333;
-  color: white;
-  border-radius: 6px;
 }
 
 /* DROPDOWN */
 .dropdown {
-  position: absolute;
-  width: 100%;
-  background: #1f2937;
+  background: #020617;
+  border: 1px solid #1f2937;
   border-radius: 6px;
-  margin-top: 4px;
   max-height: 150px;
   overflow-y: auto;
-  z-index: 10;
 }
 
 .dropdown div {
@@ -70,55 +65,255 @@
 }
 
 .dropdown div:hover {
-  background: #374151;
+  background: #1f2937;
 }
 
-.no-data {
-  padding: 6px;
-  color: #9ca3af;
-}
-
-/* STEP 2 CARD */
-.team-card {
-  background: #0f172a;
-  padding: 15px;
-  margin-bottom: 15px;
-  border-radius: 10px;
-}
-
-/* INPUT GRID */
-.faults {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-}
-
-input {
-  padding: 6px;
-  background: #111827;
-  color: white;
-  border: 1px solid #333;
-  border-radius: 6px;
-}
-
-/* BUTTONS */
-button {
-  margin-top: 15px;
-  padding: 8px 14px;
+/* 🔥 BUTTONS */
+.next, .send, .end {
+  margin-top: 20px;
+  padding: 10px 18px;
   border-radius: 8px;
-  cursor: pointer;
   border: none;
+  cursor: pointer;
 }
 
 .next {
-  background: #2563eb;
+  background: #3b82f6;
+  color: white;
 }
 
 .send {
-  background: #16a34a;
+  background: #22c55e;
+  color: white;
 }
 
 .end {
-  background: rgb(224, 82, 193);
+  background: #ef4444;
+  color: white;
   margin-left: 10px;
+}
+
+/* 🔥 STEP 2 CARD STYLE */
+.team-card {
+  background: #0f172a;
+  padding: 15px;
+  border-radius: 12px;
+  margin-bottom: 15px;
+}
+
+/* FAULT INPUT GRID */
+.faults {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.faults input {
+  padding: 8px;
+  border-radius: 6px;
+  border: none;
+  background: #111827;
+  color: white;
+}
+
+/* 🔥 MANAGER SECTION */
+.manager-section {
+  margin-top: 40px;
+}
+
+/* SUMMARY */
+.summary {
+  display: flex;
+  gap: 30px;
+  justify-content: flex-end;
+  margin-bottom: 15px;
+}
+
+.green { color: #22c55e; }
+.yellow { color: #facc15; }
+.blue { color: #60a5fa; }
+
+/* CARD */
+.card {
+  background: #0f172a;
+  border-radius: 14px;
+  padding: 20px;
+}
+
+/* TABLE */
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th {
+  text-align: left;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.sub-head th {
+  font-size: 11px;
+}
+
+td {
+  padding: 12px 5px;
+}
+
+tr {
+  border-bottom: 1px solid #1f2937;
+}
+
+/* BOX */
+.box {
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+
+.box.green { background: rgba(34,197,94,0.2); }
+.box.blue { background: rgba(59,130,246,0.2); }
+
+/* PROGRESS */
+.progress {
+  height: 6px;
+  background: #1f2937;
+  border-radius: 10px;
+  margin-top: 4px;
+}
+
+.progress div {
+  height: 100%;
+  background: #22c55e;
+  border-radius: 10px;
+}
+
+.percent {
+  font-size: 12px;
+}
+
+/* STATUS */
+.status {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+.status.done {
+  background: rgba(34,197,94,0.2);
+  color: #22c55e;
+}
+
+.status.active {
+  background: rgba(250,204,21,0.2);
+  color: #facc15;
+}
+
+.status.behind {
+  background: rgba(239,68,68,0.2);
+  color: #ef4444;
+}
+
+/* TOTAL */
+.total-row {
+  background: #020617;
+  color: #facc15;
+  font-weight: bold;
+}
+
+/* SELECT */
+.controls select {
+  background: #111827;
+  border: 1px solid #1f2937;
+  color: white;
+  padding: 8px 14px;
+  border-radius: 10px;
+}
+
+/* 🔥 FIRST PAGE CONTAINER */
+.daily-page {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* 🔥 SECTION TITLE */
+.daily-page h3 {
+  margin-bottom: 20px;
+  color: #cbd5f5;
+}
+
+/* 🔥 TEAM BLOCK */
+.team-row {
+  background: #0f172a;
+  padding: 15px;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  border: 1px solid #1f2937;
+  transition: 0.2s;
+}
+
+.team-row:hover {
+  border-color: #3b82f6;
+}
+
+/* TEAM LABEL */
+.team-row label {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+
+/* 🔥 INPUT FULL WIDTH */
+.multi-select input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+  background: #020617;
+  color: white;
+}
+
+/* 🔥 TAG STYLE UPGRADE */
+.tag {
+  background: #1e293b;
+  border: 1px solid #334155;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+/* 🔥 DROPDOWN FIX */
+.dropdown {
+  margin-top: 5px;
+  background: #020617;
+  border: 1px solid #1f2937;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.dropdown div {
+  padding: 8px 10px;
+}
+
+.dropdown div:hover {
+  background: #1e293b;
+}
+
+/* 🔥 BUTTON ALIGN */
+.next, .end {
+  margin-top: 25px;
+}
+
+/* 🔥 BUTTON CONTAINER */
+.daily-page button {
+  min-width: 150px;
+}
+
+/* 🔥 BUTTON ROW */
+.daily-page > button {
+  margin-right: 10px;
+}
+
+/* 🔥 BETTER SPACING */
+.tags {
+  margin-bottom: 6px;
 }

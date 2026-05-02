@@ -84,8 +84,6 @@ export default function DailyUpdate() {
   const today = new Date().toISOString().split("T")[0];
 
   const [step, setStep] = useState(1);
-
-  /* 🔥 AUTO LOAD FROM LOCAL STORAGE */
   const [teamMembers, setTeamMembers] = useState(() => {
     const saved = localStorage.getItem("teamMembers");
     return saved ? JSON.parse(saved) : {};
@@ -93,14 +91,11 @@ export default function DailyUpdate() {
 
   const [teamData, setTeamData] = useState({});
 
-  /* 🔥 AUTO SAVE */
   useEffect(() => {
     localStorage.setItem("teamMembers", JSON.stringify(teamMembers));
   }, [teamMembers]);
 
-  /* STEP 1 → NEXT */
   const goNext = () => {
-
     const filtered = {};
 
     Object.keys(teamMembers).forEach(team => {
@@ -119,7 +114,6 @@ export default function DailyUpdate() {
     setStep(2);
   };
 
-  /* UPDATE FAULTS */
   const update = (team, key, value) => {
     setTeamData(prev => ({
       ...prev,
@@ -130,12 +124,9 @@ export default function DailyUpdate() {
     }));
   };
 
-  /* MESSAGE */
   const generateMessage = () => {
     return Object.keys(teamData).map(team => {
-
       const t = teamData[team];
-
       let msg = `${team} ${t.members.join(", ")}`;
 
       if (t.ftthA)
@@ -145,13 +136,10 @@ export default function DailyUpdate() {
         msg += ` PSTN-${t.pstnA}/${t.pstnB}`;
 
       return msg;
-
     }).join("\n");
   };
 
-  /* SUBMIT */
   const submit = async () => {
-
     await api.saveDaily(teamData);
 
     const message = generateMessage();
@@ -162,12 +150,9 @@ export default function DailyUpdate() {
     });
 
     alert("Sent to Field 🚀");
-
-    // 🔥 BACK TO STEP 1 (KEEP DATA)
     setStep(1);
   };
 
-  /* 🔥 END DAY */
   const endDay = () => {
     localStorage.removeItem("teamMembers");
     setTeamMembers({});
@@ -187,7 +172,6 @@ export default function DailyUpdate() {
 
           {allTeams.map(team => (
             <div key={team} className="team-row">
-
               <label>{team}</label>
 
               <MultiSelect
@@ -200,7 +184,6 @@ export default function DailyUpdate() {
                   }));
                 }}
               />
-
             </div>
           ))}
 
@@ -224,31 +207,21 @@ export default function DailyUpdate() {
 
             return (
               <div key={team} className="team-card">
-
                 <h4>{team} — {t.members.join(", ")}</h4>
 
                 <div className="faults">
-                  <input
-                    placeholder="FTTH Assigned"
-                    onChange={(e) => update(team, "ftthA", e.target.value)}
-                  />
+                  <input placeholder="FTTH Assigned"
+                    onChange={(e) => update(team, "ftthA", e.target.value)} />
 
-                  <input
-                    placeholder="FTTH Attended"
-                    onChange={(e) => update(team, "ftthB", e.target.value)}
-                  />
+                  <input placeholder="FTTH Attended"
+                    onChange={(e) => update(team, "ftthB", e.target.value)} />
 
-                  <input
-                    placeholder="PSTN Assigned"
-                    onChange={(e) => update(team, "pstnA", e.target.value)}
-                  />
+                  <input placeholder="PSTN Assigned"
+                    onChange={(e) => update(team, "pstnA", e.target.value)} />
 
-                  <input
-                    placeholder="PSTN Attended"
-                    onChange={(e) => update(team, "pstnB", e.target.value)}
-                  />
+                  <input placeholder="PSTN Attended"
+                    onChange={(e) => update(team, "pstnB", e.target.value)} />
                 </div>
-
               </div>
             );
           })}
@@ -256,6 +229,81 @@ export default function DailyUpdate() {
           <button className="send" onClick={submit}>
             Send to Field 🚀
           </button>
+
+          {/* 🔥 MANAGER TABLE ADDED */}
+          <div className="manager-section">
+
+            <div className="summary">
+              <div><h2 className="green">--</h2><p>Complete</p></div>
+              <div><h2 className="yellow">--</h2><p>Pending</p></div>
+              <div><h2 className="blue">--</h2><p>Absent</p></div>
+            </div>
+
+            <div className="card">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Team</th>
+                    <th>Members</th>
+                    <th colSpan="2">FTTH</th>
+                    <th colSpan="2">PSTN</th>
+                    <th>Completion</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {Object.keys(teamData).map((team, i) => {
+                    const t = teamData[team];
+
+                    const assigned =
+                      (parseInt(t.ftthA || 0)) +
+                      (parseInt(t.pstnA || 0));
+
+                    const attended =
+                      (parseInt(t.ftthB || 0)) +
+                      (parseInt(t.pstnB || 0));
+
+                    const percent = assigned
+                      ? Math.round((attended / assigned) * 100)
+                      : 0;
+
+                    let status = "Done";
+                    if (percent < 100 && percent >= 60) status = "Active";
+                    if (percent < 60) status = "Behind";
+
+                    return (
+                      <tr key={i}>
+                        <td>{team}</td>
+                        <td>{t.members.join(", ")}</td>
+
+                        <td>{t.ftthA}</td>
+                        <td className="green-box">{t.ftthB}</td>
+
+                        <td>{t.pstnA}</td>
+                        <td className="blue-box">{t.pstnB}</td>
+
+                        <td>
+                          <div className="progress">
+                            <div style={{ width: percent + "%" }}></div>
+                          </div>
+                          <span>{percent}%</span>
+                        </td>
+
+                        <td>
+                          <span className={`status ${status.toLowerCase()}`}>
+                            {status}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+          </div>
+
         </>
       )}
 
