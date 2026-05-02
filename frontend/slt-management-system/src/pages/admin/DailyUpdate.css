@@ -1,0 +1,124 @@
+.daily-page {
+  color: white;
+  padding: 20px;
+}
+
+/* TEAM ROW */
+.team-row {
+  margin-bottom: 15px;
+}
+
+.team-row label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: bold;
+}
+
+/* MULTI SELECT */
+.multi-select {
+  position: relative;
+}
+
+/* TAGS */
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 5px;
+}
+
+.tag {
+  background: #2563eb;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.tag button {
+  margin-left: 6px;
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+}
+
+/* INPUT */
+.multi-select input {
+  width: 100%;
+  padding: 6px;
+  background: #111827;
+  border: 1px solid #333;
+  color: white;
+  border-radius: 6px;
+}
+
+/* DROPDOWN */
+.dropdown {
+  position: absolute;
+  width: 100%;
+  background: #1f2937;
+  border-radius: 6px;
+  margin-top: 4px;
+  max-height: 150px;
+  overflow-y: auto;
+  z-index: 10;
+}
+
+.dropdown div {
+  padding: 6px;
+  cursor: pointer;
+}
+
+.dropdown div:hover {
+  background: #374151;
+}
+
+.no-data {
+  padding: 6px;
+  color: #9ca3af;
+}
+
+/* STEP 2 CARD */
+.team-card {
+  background: #0f172a;
+  padding: 15px;
+  margin-bottom: 15px;
+  border-radius: 10px;
+}
+
+/* INPUT GRID */
+.faults {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+input {
+  padding: 6px;
+  background: #111827;
+  color: white;
+  border: 1px solid #333;
+  border-radius: 6px;
+}
+
+/* BUTTONS */
+button {
+  margin-top: 15px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: none;
+}
+
+.next {
+  background: #2563eb;
+}
+
+.send {
+  background: #16a34a;
+}
+
+.end {
+  background: rgb(224, 82, 193);
+  margin-left: 10px;
+}
