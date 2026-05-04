@@ -18,8 +18,13 @@ body {
 
 /* start */
 
+/* 🔥 MAIN CONTAINER CENTER */
 .admin-dashboard {
   color: white;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  
 }
 
 /* HEADER */
@@ -28,6 +33,7 @@ body {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 25px;
+  
 }
 
 .header p {
@@ -48,18 +54,21 @@ body {
   background: #3b82f6;
 }
 
-/* STATS */
-.stats {
+.Dashboard-stats {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
-}
+  grid-template-columns: repeat(3, 1fr);
+  gap: 30px;
 
-.stat-card {
+  max-width: 900px;   /* 🔥 controls spacing */
+  margin: 0 auto;
+}
+/* 🔥 CARD */
+.Dashboard-stat-card {
   background: #111827;
-  padding: 20px;
+  padding: 25px;   /* 🔥 increase spacing inside */
   border-radius: 14px;
   border: 1px solid #1f2937;
+  text-align: center;
 }
 
 .blue { border-top: 3px solid #3b82f6; }
@@ -70,11 +79,14 @@ body {
 /* MAIN GRID */
 .main-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: 1fr; /* 🔥 centered layout */
   gap: 25px;
   margin-top: 30px;
   align-items: start;
+  justify-content: center;
 }
+
+
 
 /* TABLE */
 .table-wrapper {
@@ -89,7 +101,7 @@ table {
 
 th, td {
   padding: 12px 10px;
-  text-align: left;
+  text-align: center; /* 🔥 centered */
   white-space: nowrap;
 }
 
@@ -175,9 +187,9 @@ tr {
 .bar.purple div { background: #8b5cf6; }
 .bar.green div { background: #22c55e; }
 
-/* ACTIVITY */
+/* 🔥 ACTIVITY FIX (MOVE UP) */
 .activity-card {
-  margin-top: 25px;
+  margin-top: 10px;
 }
 
 .menu-btn {
@@ -191,7 +203,7 @@ tr {
 }
 
 .admin-layout {
-  padding-top: 2rem; /* 🔥 gap below ☰ */
+  padding-top: 2rem;
 }
 
 .overlay {
@@ -204,27 +216,30 @@ tr {
   z-index: 900;
 }
 
+/* MOBILE */
 @media (max-width: 768px) {
 
-  .stats {
-    grid-template-columns: 1fr 1fr;
-  }
-  /* 🔥 make layout single column */
+
   .main-grid {
     grid-template-columns: 1fr;
   }
 
-  /* 🔥 center the right panel */
+  .admin-dashboard {
+    padding: 15px;
+  }
+
   .right-panel {
     align-items: center;
     width: 100%;
   }
 
-  /* 🔥 center each card */
   .right-panel .card {
     width: 100%;
     max-width: 360px;
-    margin: 0 auto; /* 🔥 THIS centers it */
+    margin: 0 auto;
   }
-
+ .Dashboard-stats {
+    grid-template-columns: 1fr;
+  }
 }
+

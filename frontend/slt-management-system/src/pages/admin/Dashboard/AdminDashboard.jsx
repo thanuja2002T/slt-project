@@ -10,33 +10,23 @@ export default function AdminDashboard() {
           <h1>Admin Dashboard</h1>
           <p>Overview of all field teams and performance metrics today</p>
         </div>
-
-        <div className="header-actions">
-          <button className="btn-outline">Export CSV</button>
-        </div>
       </div>
 
       {/* STATS */}
-      <div className="stats">
-        <div className="stat-card blue">
-          <h4>Total Technicians</h4>
-          <h2>18</h2>
-          <p>JA1 – JA18 active</p>
-        </div>
-
-        <div className="stat-card green">
+      <div className="Dashboard-stats">
+        <div className="Dashboard-stat-card green">
           <h4>Avg Completion</h4>
           <h2>84%</h2>
           <p>↑ 6% from last month</p>
         </div>
 
-        <div className="stat-card orange">
+        <div className="Dashboard-stat-card orange">
           <h4>Faults Today</h4>
           <h2>47</h2>
           <p>39 attended • 8 pending</p>
         </div>
 
-        <div className="stat-card purple">
+        <div className="Dashboard-stat-card purple">
           <h4>Teams Active</h4>
           <h2>6</h2>
           <p>FTTH ×3 • PSTN ×3</p>
@@ -98,83 +88,8 @@ export default function AdminDashboard() {
             </table>
           </div>
         </div>
-
-        {/* RIGHT SIDE */}
-        <div className="right-panel">
-
-          {/* ACTIONS */}
-          <div className="card">
-            <h3>Quick Actions</h3>
-
-            <button className="action-btn primary">📊 View Summary Table</button>
-            <button className="action-btn">📋 Manager Daily Update</button>
-            <button className="action-btn">📉 Fault Analysis Report</button>
-            <button className="action-btn">🏆 Final Comparison</button>
-          </div>
-
-          {/* BARS */}
-          <div className="card">
-            <h3>Today's Fault Breakdown</h3>
-
-            <p>FTTH Faults</p>
-            <div className="bar blue"><div style={{ width: "85%" }}></div></div>
-
-            <p>PSTN Faults</p>
-            <div className="bar purple"><div style={{ width: "70%" }}></div></div>
-
-            <p>Data Faults</p>
-            <div className="bar green"><div style={{ width: "20%" }}></div></div>
-          </div>
-
-        </div>
       </div>
 
-      {/* 🔻 FULL WIDTH ACTIVITY */}
-      <div className="card activity-card">
-        <h3>Recent Activity Log</h3>
-
-        <table>
-          <thead>
-            <tr>
-              <th>Time</th>
-              <th>Technician</th>
-              <th>Team</th>
-              <th>Action</th>
-              <th>Fault Type</th>
-              <th>Vehicle</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            <tr>
-              <td>09:14</td>
-              <td>JA1 • Member 001</td>
-              <td><span className="tag blue">FTTH</span></td>
-              <td>Vehicle Out</td>
-              <td>—</td>
-              <td>WP-AB-1234</td>
-            </tr>
-
-            <tr>
-              <td>10:32</td>
-              <td>JA1 • Member 001</td>
-              <td><span className="tag blue">FTTH</span></td>
-              <td>1st Fault Attended</td>
-              <td>FTTH</td>
-              <td>WP-AB-1234</td>
-            </tr>
-
-            <tr>
-              <td>11:05</td>
-              <td>JA2 • Member 003</td>
-              <td><span className="tag purple">PSTN</span></td>
-              <td>Vehicle Out</td>
-              <td>—</td>
-              <td>WP-CD-5678</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
 
     </div>
   );
