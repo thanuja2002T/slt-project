@@ -1,4 +1,4 @@
-/* PAGE */
+/* 🔥 PAGE */
 .analysis-page {
   color: white;
   padding: 30px;
@@ -9,138 +9,125 @@
 /* HEADER */
 h1 {
   margin-bottom: 5px;
+  font-size: 28px;
 }
 
 .sub {
   color: #6b7280;
-  margin-bottom: 20px;
-}
-
-/* FILTER BAR */
-.top-controls {
-  display: flex;
-  gap: 12px;
   margin-bottom: 25px;
-  flex-wrap: wrap;
 }
 
-/* SELECT */
-select {
-  background: #111827;
-  border: 1px solid #1f2937;
-  color: white;
-  padding: 8px 14px;
-  border-radius: 10px;
-  outline: none;
-  cursor: pointer;
-  transition: 0.2s;
-}
-
-select:hover {
-  border-color: #3b82f6;
-}
-
-/* CSV BUTTON */
-.upload-btn {
-  background: linear-gradient(135deg, #2563eb, #3b82f6);
-  border: none;
-  padding: 8px 16px;
-  border-radius: 10px;
-  color: white;
-  cursor: pointer;
-  font-weight: 500;
-  transition: 0.2s;
-}
-
-.upload-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 5px 12px rgba(37, 99, 235, 0.4);
-}
-
-/* GRID */
+/* 🔥 GRID */
 .analysis-grid {
   display: grid;
   grid-template-columns: 3fr 1fr;
   gap: 25px;
 }
 
-/* CARD */
+/* 🔥 CARD */
 .card {
   background: linear-gradient(145deg, #0f172a, #0b1220);
-  border-radius: 16px;
+  border-radius: 18px;
   padding: 25px;
   border: 1px solid #1f2937;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
 }
 
-/* TABLE */
+/* 🔥 TABLE WRAP */
+.table-container {
+  overflow-x: auto;
+}
+
+/* 🔥 TABLE */
 table {
   width: 100%;
-  border-collapse: collapse;
-  margin-top: 15px;
+  border-collapse: separate;
+  border-spacing: 0 8px; /* row gap */
 }
 
+/* HEADER */
 th {
-  color: #6b7280;
+  color: #94a3b8;
   font-size: 12px;
-  text-align: left;
-  padding-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 12px 10px;
+  text-align: center;
+  white-space: nowrap;
 }
 
+/* 🔥 ROW */
+tbody tr {
+  background: rgba(15, 23, 42, 0.7);
+  transition: 0.25s ease;
+}
+
+/* HOVER */
+tbody tr:hover {
+  background: rgba(30, 41, 59, 0.8);
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+}
+
+/* CELL */
 td {
-  padding: 12px 8px;
-}
-
-tr {
+  padding: 14px 10px;
+  text-align: center;
+  border-top: 1px solid #1f2937;
   border-bottom: 1px solid #1f2937;
-  transition: 0.2s;
+  white-space: nowrap;
 }
 
-tr:hover {
-  background: #0b1220;
+/* 🔥 ROUND CORNERS */
+tbody tr td:first-child {
+  border-left: 1px solid #1f2937;
+  border-radius: 10px 0 0 10px;
 }
 
-/* TAG */
-.tag {
-  padding: 5px 12px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.tag.blue { background: #1e3a8a; }
-.tag.purple { background: #6d28d9; }
-
-/* COLORS */
-.green { color: #22c55e; }
-.red { color: #ef4444; }
-
-/* AVG ROW */
-.avg-row {
-  background: #020617;
-  color: #facc15;
+tbody tr td:last-child {
+  border-right: 1px solid #1f2937;
+  border-radius: 0 10px 10px 0;
   font-weight: bold;
 }
 
-/* RIGHT PANEL */
+/* 🔥 COLORS */
+.green {
+  color: #22c55e;
+  text-shadow: 0 0 6px rgba(34,197,94,0.5);
+}
+
+.yellow {
+  color: #f59e0b;
+  text-shadow: 0 0 6px rgba(245,158,11,0.5);
+}
+
+.red {
+  color: #ef4444;
+  text-shadow: 0 0 6px rgba(239,68,68,0.5);
+}
+
+/* 🔥 SIDE CARD */
 .side-card {
   background: linear-gradient(145deg, #0f172a, #0b1220);
   padding: 25px;
-  border-radius: 16px;
+  border-radius: 18px;
   border: 1px solid #1f2937;
-  height: fit-content;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
 }
 
 /* METRIC */
 .metric {
-  margin-bottom: 25px;
+  margin-bottom: 30px;
 }
 
 .metric p {
-  margin-bottom: 5px;
+  margin-bottom: 6px;
+  color: #cbd5f5;
 }
 
 .metric h2 {
-  margin-bottom: 6px;
+  margin-bottom: 8px;
+  font-size: 22px;
 }
 
 .metric span {
@@ -152,7 +139,7 @@ tr:hover {
   color: #22c55e;
 }
 
-/* BARS */
+/* 🔥 BARS */
 .bar {
   height: 6px;
   background: #1f2937;
@@ -165,17 +152,29 @@ tr:hover {
   border-radius: 10px;
 }
 
+/* COLORS */
 .bar.yellow div { background: #facc15; }
 .bar.orange div { background: #fb923c; }
 .bar.green div { background: #22c55e; }
 
-/* 🔥 RESPONSIVE */
+/* 🔥 MOBILE */
 @media (max-width: 900px) {
   .analysis-grid {
     grid-template-columns: 1fr;
   }
+}
 
-  .top-controls {
-    justify-content: center;
-  }
+/* 🔥 OPTIONAL ENHANCEMENTS */
+
+/* Sticky header */
+thead th {
+  position: sticky;
+  top: 0;
+  background: #020617;
+  z-index: 5;
+}
+
+/* Smooth scroll */
+.table-container {
+  scroll-behavior: smooth;
 }
