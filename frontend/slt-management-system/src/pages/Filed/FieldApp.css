@@ -6,6 +6,27 @@ body {
   color: white;
 }
 
+.notif-box {
+  margin-bottom: 15px;
+}
+
+.notif {
+  background: #1f2937;
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.notif.unseen {
+  border-left: 4px solid #3b82f6;
+}
+
+.no-notif {
+  color: #6b7280;
+  font-size: 13px;
+}
+
 /* MAIN LAYOUT */
 .field-layout {
   display: grid;
@@ -232,6 +253,9 @@ body {
 .thank-box h2 {
   color: #22c97a;
 }
+
+
+
 
 /* ========================= */
 /* 📱 MOBILE VIEW */

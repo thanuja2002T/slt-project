@@ -96,14 +96,16 @@ tbody tr td:last-child {
   text-shadow: 0 0 6px rgba(34,197,94,0.5);
 }
 
-.yellow {
-  color: #f59e0b;
-  text-shadow: 0 0 6px rgba(245,158,11,0.5);
-}
+
 
 .red {
   color: #ef4444;
   text-shadow: 0 0 6px rgba(239,68,68,0.5);
+}
+
+.lightred {
+  color: #f87171; /* soft red */
+  text-shadow: 0 0 6px rgba(184, 94, 94, 0.5);
 }
 
 /* 🔥 SIDE CARD */
@@ -156,6 +158,10 @@ tbody tr td:last-child {
 .bar.yellow div { background: #facc15; }
 .bar.orange div { background: #fb923c; }
 .bar.green div { background: #22c55e; }
+
+.pink_vf { color: #c5229fe1; }
+.yellow_vf { color: #facc15; }
+.orange_vf { color: #f4a538; }
 
 /* 🔥 MOBILE */
 @media (max-width: 900px) {
