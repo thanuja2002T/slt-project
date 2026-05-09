@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { api } from "../../../api";
 import "./DailyUpdate.css";
+import { supabase } from "../../../lib/supabase";
 
 /* 🔹 TEAMS */
 const allTeams = Array.from({ length: 18 }, (_, i) => `JA${i + 1}`);
@@ -17,29 +17,28 @@ const membersList = [
 
 /* 🔥 MULTI SELECT */
 function MultiSelect({ team, defaultValue = [], onChange }) {
-  const [input, setInput] = useState("");
-  const [selected, setSelected] = useState(defaultValue);
 
-  useEffect(() => {
-    setSelected(defaultValue);
-  }, [defaultValue]);
+  const [input, setInput] = useState("");
 
   const filtered = membersList.filter(
     m =>
       m.toLowerCase().includes(input.toLowerCase()) &&
-      !selected.includes(m)
+      !defaultValue.includes(m)
   );
 
   const addMember = (name) => {
-    const updated = [...selected, name];
-    setSelected(updated);
+
+    const updated = [...defaultValue, name];
+
     onChange(team, updated);
+
     setInput("");
   };
 
   const removeMember = (name) => {
-    const updated = selected.filter(m => m !== name);
-    setSelected(updated);
+
+    const updated = defaultValue.filter(m => m !== name);
+
     onChange(team, updated);
   };
 
@@ -47,12 +46,21 @@ function MultiSelect({ team, defaultValue = [], onChange }) {
     <div className="multi-select">
 
       <div className="tags">
-        {selected.map(m => (
+
+        {defaultValue.map(m => (
           <span key={m} className="tag">
             {m}
-            <button onClick={() => removeMember(m)}>×</button>
+
+            <button
+              type="button"
+              onClick={() => removeMember(m)}
+            >
+              ×
+            </button>
+
           </span>
         ))}
+
       </div>
 
       <input
@@ -63,17 +71,29 @@ function MultiSelect({ team, defaultValue = [], onChange }) {
 
       {input && (
         <div className="dropdown">
+
           {filtered.length > 0 ? (
+
             filtered.map(m => (
-              <div key={m} onClick={() => addMember(m)}>
+              <div
+                key={m}
+                onClick={() => addMember(m)}
+              >
                 {m}
               </div>
             ))
+
           ) : (
-            <div className="no-data">No match</div>
+
+            <div className="no-data">
+              No match
+            </div>
+
           )}
+
         </div>
       )}
+
     </div>
   );
 }
@@ -81,110 +101,184 @@ function MultiSelect({ team, defaultValue = [], onChange }) {
 /* 🔥 MAIN */
 export default function DailyUpdate() {
 
-  const today = new Date().toISOString().split("T")[0];
-
   const [step, setStep] = useState(1);
+
   const [teamMembers, setTeamMembers] = useState(() => {
+
     const saved = localStorage.getItem("teamMembers");
+
     return saved ? JSON.parse(saved) : {};
+
   });
 
   const [teamData, setTeamData] = useState({});
 
+  const [success, setSuccess] = useState(false);
+
+  /* 🔥 SAVE LOCAL STORAGE */
   useEffect(() => {
-    localStorage.setItem("teamMembers", JSON.stringify(teamMembers));
+
+    localStorage.setItem(
+      "teamMembers",
+      JSON.stringify(teamMembers)
+    );
+
   }, [teamMembers]);
 
+  /* 🔥 NEXT */
   const goNext = () => {
+
     const filtered = {};
 
     Object.keys(teamMembers).forEach(team => {
+
       if (teamMembers[team]?.length > 0) {
+
         filtered[team] = {
+
           members: teamMembers[team],
+
           ftthA: "",
           ftthB: "",
+
           pstnA: "",
           pstnB: ""
+
         };
       }
+
     });
 
     setTeamData(filtered);
+
     setStep(2);
   };
 
+  /* 🔥 UPDATE INPUT */
   const update = (team, key, value) => {
+
     setTeamData(prev => ({
+
       ...prev,
+
       [team]: {
+
         ...prev[team],
+
         [key]: value
+
       }
+
     }));
+
   };
 
-  const generateMessage = () => {
-    return Object.keys(teamData).map(team => {
-      const t = teamData[team];
-      let msg = `${team} ${t.members.join(", ")}`;
-
-      if (t.ftthA)
-        msg += ` FTTH-${t.ftthA}/${t.ftthB}`;
-
-      if (t.pstnA)
-        msg += ` PSTN-${t.pstnA}/${t.pstnB}`;
-
-      return msg;
-    }).join("\n");
-  };
-
+  /* 🔥 SUBMIT */
   const submit = async () => {
-    await api.saveDaily(teamData);
 
-    const message = generateMessage();
+    for (const team of Object.keys(teamData)) {
 
-    await api.sendNotification({
-      message,
-      date: today
-    });
+      const t = teamData[team];
 
-    alert("Sent to Field 🚀");
-    setStep(1);
+      const message = `
+${team}
+
+Members:
+${t.members.join(", ")}
+
+FTTH Assigned: ${t.ftthA}
+FTTH Attended: ${t.ftthB}
+
+PSTN Assigned: ${t.pstnA}
+PSTN Attended: ${t.pstnB}
+`;
+
+      const { error } = await supabase
+        .from("notifications")
+        .insert([
+          {
+            team,
+            message
+          }
+        ]);
+
+      if (error) {
+
+        console.log(error);
+
+        alert("Database Error ❌");
+
+        return;
+      }
+    }
+
+    /* 🔥 SUCCESS BOX */
+    setSuccess(true);
+
+    setTimeout(() => {
+
+      setSuccess(false);
+
+    }, 2500);
+
   };
 
+  /* 🔥 END DAY */
   const endDay = () => {
+
     localStorage.removeItem("teamMembers");
+
     setTeamMembers({});
+
     setStep(1);
+
     alert("Day Closed ✅");
+
   };
 
   return (
+
     <div className="daily-page">
+
+      {/* 🔥 SUCCESS MESSAGE */}
+      {success && (
+        <div className="send-success-box">
+          🚀 Successfully sent to field team
+        </div>
+      )}
 
       <h1>Daily Update</h1>
 
       {/* STEP 1 */}
       {step === 1 && (
         <>
+
           <h3>Select Team Members</h3>
 
           {allTeams.map(team => (
+
             <div key={team} className="team-row">
+
               <label>{team}</label>
 
               <MultiSelect
                 team={team}
                 defaultValue={teamMembers[team] || []}
                 onChange={(team, selected) => {
+
                   setTeamMembers(prev => ({
+
                     ...prev,
+
                     [team]: selected
+
                   }));
+
                 }}
               />
+
             </div>
+
           ))}
 
           <button className="next" onClick={goNext}>
@@ -194,115 +288,69 @@ export default function DailyUpdate() {
           <button className="end" onClick={endDay}>
             End for Today
           </button>
+
         </>
       )}
 
       {/* STEP 2 */}
       {step === 2 && (
         <>
+
           <h3>Enter Fault Details</h3>
 
           {Object.keys(teamData).map(team => {
+
             const t = teamData[team];
 
             return (
+
               <div key={team} className="team-card">
-                <h4>{team} — {t.members.join(", ")}</h4>
+
+                <h4>
+                  {team} — {t.members.join(", ")}
+                </h4>
 
                 <div className="faults">
-                  <input placeholder="FTTH Assigned"
-                    onChange={(e) => update(team, "ftthA", e.target.value)} />
 
-                  <input placeholder="FTTH Attended"
-                    onChange={(e) => update(team, "ftthB", e.target.value)} />
+                  <input
+                    placeholder="FTTH Assigned"
+                    onChange={(e) =>
+                      update(team, "ftthA", e.target.value)
+                    }
+                  />
 
-                  <input placeholder="PSTN Assigned"
-                    onChange={(e) => update(team, "pstnA", e.target.value)} />
+                  <input
+                    placeholder="FTTH Attended"
+                    onChange={(e) =>
+                      update(team, "ftthB", e.target.value)
+                    }
+                  />
 
-                  <input placeholder="PSTN Attended"
-                    onChange={(e) => update(team, "pstnB", e.target.value)} />
+                  <input
+                    placeholder="PSTN Assigned"
+                    onChange={(e) =>
+                      update(team, "pstnA", e.target.value)
+                    }
+                  />
+
+                  <input
+                    placeholder="PSTN Attended"
+                    onChange={(e) =>
+                      update(team, "pstnB", e.target.value)
+                    }
+                  />
+
                 </div>
+
               </div>
+
             );
+
           })}
 
           <button className="send" onClick={submit}>
             Send to Field 🚀
           </button>
-
-          {/* 🔥 MANAGER TABLE ADDED */}
-          <div className="manager-section">
-
-            <div className="summary">
-              <div><h2 className="green">--</h2><p>Complete</p></div>
-              <div><h2 className="yellow">--</h2><p>Pending</p></div>
-              <div><h2 className="blue">--</h2><p>Absent</p></div>
-            </div>
-
-            <div className="card">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Team</th>
-                    <th>Members</th>
-                    <th colSpan="2">FTTH</th>
-                    <th colSpan="2">PSTN</th>
-                    <th>Completion</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {Object.keys(teamData).map((team, i) => {
-                    const t = teamData[team];
-
-                    const assigned =
-                      (parseInt(t.ftthA || 0)) +
-                      (parseInt(t.pstnA || 0));
-
-                    const attended =
-                      (parseInt(t.ftthB || 0)) +
-                      (parseInt(t.pstnB || 0));
-
-                    const percent = assigned
-                      ? Math.round((attended / assigned) * 100)
-                      : 0;
-
-                    let status = "Done";
-                    if (percent < 100 && percent >= 60) status = "Active";
-                    if (percent < 60) status = "Behind";
-
-                    return (
-                      <tr key={i}>
-                        <td>{team}</td>
-                        <td>{t.members.join(", ")}</td>
-
-                        <td>{t.ftthA}</td>
-                        <td className="green-box">{t.ftthB}</td>
-
-                        <td>{t.pstnA}</td>
-                        <td className="blue-box">{t.pstnB}</td>
-
-                        <td>
-                          <div className="progress">
-                            <div style={{ width: percent + "%" }}></div>
-                          </div>
-                          <span>{percent}%</span>
-                        </td>
-
-                        <td>
-                          <span className={`status ${status.toLowerCase()}`}>
-                            {status}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-          </div>
 
         </>
       )}
