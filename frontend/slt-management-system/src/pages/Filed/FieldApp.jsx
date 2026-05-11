@@ -15,8 +15,38 @@ export default function FieldApp() {
   const [faultCount, setFaultCount] = useState(1);
   const [finished, setFinished] = useState(false);
 
-  const vehicles = ["KA-1234", "KA-5678", "WP-2345"];
-  const members = ["Ajanthan", "Sasi", "Naren", "Kavi", "Thanuja"];
+  const vehicles = ["GD 3705", "LF-6153", "PS-2390", "DAE 3945", "53-4251", "PG-9279", "YC-4304","LF 6150", "57-7429", "58-6225", "QR 8624", "DAC 7547", "57-7429", "QR 8626", "YC 4358","QR 8636", "253-7479", "53-1937", "PA 8300", "58-6225", "253-1876", "JK 1113"];
+  const members = [
+  "Tharsan",
+  "M.Jana",
+  "Johnson",
+  "S.Ramesh",
+  "Puvinath",
+  "Kokolaramana",
+  "Anpalagan",
+  "Thiva",
+  "Muruka",
+  "Sathees",
+  "Nanthan",
+  "M.Suresh",
+  "Sivaratnam",
+  "Vikke",
+  "T.Sansu",
+  "Anutharsan",
+  "Rajasimman",
+  "S.Vikna",
+  "Paventhan",
+  "Srikanth",
+  "Jeyaraman",
+  "Ajanthan",
+  "Sasi",
+  "Rathees",
+  "Naren",
+  "T.Suresh",
+  "Niranjan",
+  "Kavi",
+  "Pakeer"
+];
 
   const filteredVehicles = vehicles.filter((v) =>
     v.toLowerCase().includes(vehicleInput.toLowerCase())

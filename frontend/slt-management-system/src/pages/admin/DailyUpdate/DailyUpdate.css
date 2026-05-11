@@ -1,80 +1,143 @@
-/* 🔥 PAGE LAYOUT FIX */
 .daily-page {
+  min-height: 100vh;
+  background: #020617;
+  padding: 40px;
   color: white;
-  padding: 25px;
-  max-width: 1200px;
 }
 
-/* TITLE */
+/* =========================
+   HEADINGS
+========================= */
+
 .daily-page h1 {
+  font-size: 44px;
+  margin-bottom: 30px;
+  font-weight: 700;
+}
+
+.daily-page h3 {
+  margin-bottom: 25px;
+  color: #cbd5e1;
+  font-size: 24px;
+}
+
+/* =========================
+   STEP 1
+========================= */
+
+.team-row {
+  background: #08142b;
+  border: 1px solid #162544;
+  border-radius: 20px;
+  padding: 22px;
   margin-bottom: 20px;
 }
 
-/* 🔥 TEAM ROW FIX */
-.team-row {
-  margin-bottom: 15px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+.team-row label {
+  display: block;
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 14px;
 }
 
-/* INPUT FULL WIDTH */
+/* =========================
+   MULTI SELECT
+========================= */
+
+.multi-select {
+  position: relative;
+}
+
 .multi-select input {
-  width: 250px;
-  padding: 8px;
-  border-radius: 6px;
-  border: none;
-  background: #111827;
+  width: 100%;
+  background: #020617;
+  border: 1px solid #0f172a;
+  border-radius: 14px;
+  padding: 16px;
   color: white;
+  font-size: 16px;
+}
+
+.multi-select input:focus {
+  outline: none;
+  border: 1px solid #3b82f6;
 }
 
 /* TAGS */
+
 .tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 10px;
+  margin-bottom: 12px;
 }
 
 .tag {
-  background: #1f2937;
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-size: 12px;
+  background: #2563eb;
+  color: white;
+  padding: 8px 14px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
 }
 
 .tag button {
-  margin-left: 5px;
-  background: none;
+  background: transparent;
   border: none;
-  color: red;
+  color: white;
+  font-size: 18px;
   cursor: pointer;
 }
 
-/* DROPDOWN */
+/* =========================
+   DROPDOWN
+========================= */
+
 .dropdown {
-  background: #020617;
-  border: 1px solid #1f2937;
-  border-radius: 6px;
-  max-height: 150px;
+  position: absolute;
+  top: 105%;
+  left: 0;
+  width: 100%;
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 14px;
+  max-height: 250px;
   overflow-y: auto;
+  z-index: 999;
 }
 
 .dropdown div {
-  padding: 6px;
+  padding: 14px;
   cursor: pointer;
+  transition: 0.2s;
 }
 
 .dropdown div:hover {
-  background: #1f2937;
+  background: #1e293b;
 }
 
-/* 🔥 BUTTONS */
-.next, .send, .end {
-  margin-top: 20px;
-  padding: 10px 18px;
-  border-radius: 8px;
+.no-data {
+  color: #94a3b8;
+}
+
+/* =========================
+   BUTTONS
+========================= */
+
+.next,
+.end,
+.send {
   border: none;
+  padding: 16px 32px;
+  border-radius: 14px;
+  font-size: 17px;
+  font-weight: 600;
   cursor: pointer;
+  margin-top: 25px;
+  margin-right: 14px;
+  transition: 0.2s;
 }
 
 .next {
@@ -82,238 +145,237 @@
   color: white;
 }
 
-.send {
-  background: #22c55e;
-  color: white;
+.next:hover {
+  background: #2563eb;
 }
 
 .end {
   background: #ef4444;
   color: white;
-  margin-left: 10px;
 }
 
-/* 🔥 STEP 2 CARD STYLE */
-.team-card {
-  background: #0f172a;
-  padding: 15px;
-  border-radius: 12px;
-  margin-bottom: 15px;
+.end:hover {
+  background: #dc2626;
 }
 
-/* FAULT INPUT GRID */
-.faults {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-}
-
-.faults input {
-  padding: 8px;
-  border-radius: 6px;
-  border: none;
-  background: #111827;
+.send {
+  background: #a43230;
   color: white;
 }
 
-/* 🔥 MANAGER SECTION */
-.manager-section {
-  margin-top: 40px;
+.send:hover {
+  background: #a42a2a;
 }
 
-/* SUMMARY */
-.summary {
+/* =========================
+   STEP 2
+========================= */
+
+.team-card {
+  background: #08142b;
+  border: 1px solid #162544;
+  border-radius: 22px;
+  padding: 28px;
+  margin-bottom: 30px;
+}
+
+.team-card h4 {
+  font-size: 30px;
+  margin-bottom: 28px;
+}
+
+/* =========================
+   FAULTS
+========================= */
+
+.faults {
   display: flex;
-  gap: 30px;
-  justify-content: flex-end;
-  margin-bottom: 15px;
+  flex-direction: column;
+  gap: 24px;
 }
 
-.green { color: #22c55e; }
-.yellow { color: #facc15; }
-.blue { color: #60a5fa; }
+/* EACH TYPE */
 
-/* CARD */
-.card {
-  background: #0f172a;
+.fault-group {
+  background: #0b1731;
+  border: 1px solid #162544;
+  border-radius: 18px;
+  padding: 22px;
+}
+
+.fault-group-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #60a5fa;
+  margin-bottom: 18px;
+}
+
+/* ASSIGNED + ATTENDED */
+
+.fault-pair {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.fault-pair input {
+  width: 100%;
+  background: #020617;
+  border: 1px solid #0f172a;
   border-radius: 14px;
-  padding: 20px;
+  padding: 16px;
+  color: white;
+  font-size: 16px;
 }
 
-/* TABLE */
+.fault-pair input:focus {
+  outline: none;
+  border: 1px solid #3b82f6;
+}
+
+/* =========================
+   LIVE TABLE
+========================= */
+
+.manager-section {
+  margin-top: 50px;
+}
+
+.card {
+  background: #08142b;
+  border: 1px solid #162544;
+  border-radius: 24px;
+  padding: 24px;
+  overflow-x: auto;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
+  min-width: 1100px;
 }
 
 th {
   text-align: left;
-  font-size: 12px;
-  color: #6b7280;
-}
-
-.sub-head th {
-  font-size: 11px;
+  color: #94a3b8;
+  padding: 18px;
+  font-size: 15px;
 }
 
 td {
-  padding: 12px 5px;
+  padding: 18px;
+  border-top: 1px solid #162544;
+  font-size: 15px;
 }
 
-tr {
-  border-bottom: 1px solid #1f2937;
-}
+/* =========================
+   PROGRESS
+========================= */
 
-/* BOX */
-.box {
-  padding: 4px 10px;
-  border-radius: 8px;
-}
-
-.box.green { background: rgba(34,197,94,0.2); }
-.box.blue { background: rgba(59,130,246,0.2); }
-
-/* PROGRESS */
 .progress {
-  height: 6px;
-  background: #1f2937;
-  border-radius: 10px;
-  margin-top: 4px;
+  width: 170px;
+  height: 8px;
+  background: #1e293b;
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 8px;
 }
 
 .progress div {
   height: 100%;
   background: #22c55e;
-  border-radius: 10px;
-}
-
-.percent {
-  font-size: 12px;
-}
-
-/* STATUS */
-.status {
-  padding: 4px 10px;
   border-radius: 999px;
-  font-size: 12px;
+}
+
+/* =========================
+   STATUS
+========================= */
+
+.status {
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .status.done {
-  background: rgba(34,197,94,0.2);
+  background: rgba(34, 197, 94, 0.2);
   color: #22c55e;
 }
 
 .status.active {
-  background: rgba(250,204,21,0.2);
+  background: rgba(234, 179, 8, 0.2);
   color: #facc15;
 }
 
 .status.behind {
-  background: rgba(239,68,68,0.2);
+  background: rgba(239, 68, 68, 0.2);
   color: #ef4444;
 }
 
-/* TOTAL */
-.total-row {
-  background: #020617;
-  color: #facc15;
-  font-weight: bold;
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 768px) {
+
+  .daily-page {
+    padding: 20px;
+  }
+
+  .daily-page h1 {
+    font-size: 34px;
+  }
+
+  .daily-page h3 {
+    font-size: 20px;
+  }
+
+  .team-card h4 {
+    font-size: 24px;
+  }
+
 }
 
-/* SELECT */
-.controls select {
-  background: #111827;
-  border: 1px solid #1f2937;
-  color: white;
-  padding: 8px 14px;
-  border-radius: 10px;
+.faults-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-top: 20px;
 }
 
-/* 🔥 FIRST PAGE CONTAINER */
-.daily-page {
-  max-width: 900px;
-  margin: 0 auto;
+.fault-group {
+  background: #0b1731;
+  border: 1px solid #162544;
+  border-radius: 18px;
+  padding: 22px;
 }
 
-/* 🔥 SECTION TITLE */
-.daily-page h3 {
-  margin-bottom: 20px;
-  color: #cbd5f5;
+.fault-group-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #60a5fa;
+  margin-bottom: 18px;
 }
 
-/* 🔥 TEAM BLOCK */
-.team-row {
-  background: #0f172a;
-  padding: 15px;
-  border-radius: 12px;
-  margin-bottom: 12px;
-  border: 1px solid #1f2937;
-  transition: 0.2s;
+.fault-pair {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
-.team-row:hover {
-  border-color: #3b82f6;
-}
-
-/* TEAM LABEL */
-.team-row label {
-  font-size: 14px;
-  font-weight: 500;
-  margin-bottom: 6px;
-}
-
-/* 🔥 INPUT FULL WIDTH */
-.multi-select input {
+.fault-pair input {
   width: 100%;
-  padding: 10px;
-  border-radius: 8px;
-  border: none;
   background: #020617;
+  border: 1px solid #0f172a;
+  border-radius: 14px;
+  padding: 16px;
   color: white;
+  font-size: 16px;
 }
 
-/* 🔥 TAG STYLE UPGRADE */
-.tag {
-  background: #1e293b;
-  border: 1px solid #334155;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-}
-
-/* 🔥 DROPDOWN FIX */
-.dropdown {
-  margin-top: 5px;
-  background: #020617;
-  border: 1px solid #1f2937;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.dropdown div {
-  padding: 8px 10px;
-}
-
-.dropdown div:hover {
-  background: #1e293b;
-}
-
-/* 🔥 BUTTON ALIGN */
-.next, .end {
-  margin-top: 25px;
-}
-
-/* 🔥 BUTTON CONTAINER */
-.daily-page button {
-  min-width: 150px;
-}
-
-/* 🔥 BUTTON ROW */
-.daily-page > button {
-  margin-right: 10px;
-}
-
-/* 🔥 BETTER SPACING */
-.tags {
-  margin-bottom: 6px;
+@media (max-width: 1000px) {
+  .faults-grid {
+    grid-template-columns: 1fr;
+  }
 }
