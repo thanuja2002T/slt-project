@@ -1,34 +1,81 @@
 import { useState, useEffect } from "react";
+import { api } from "../../../api";
 import "./DailyUpdate.css";
-import { supabase } from "../../../lib/supabase";
 
-/* 🔹 TEAMS */
-const allTeams = Array.from({ length: 18 }, (_, i) => `JA${i + 1}`);
+/* =========================
+   TEAMS
+========================= */
+const allTeams = Array.from(
+  { length: 18 },
+  (_, i) => `JA${i + 1}`
+);
 
-/* 🔹 MEMBERS */
+/* =========================
+   MEMBERS
+========================= */
 const membersList = [
-  "Tharsan","M.Jana","Johnson","S.Ramesh","Puvinath",
-  "Kokolaramana","Anpalagan","Thiva","Muruka","Sathees",
-  "Nanthan","M.Suresh","Sivaratnam","Vikke","T.Sansu",
-  "Anutharsan","Rajasimman","S.Vikna","Paventhan","Srikanth",
-  "Jeyaraman","Ajanthan","Sasi","Rathees","Naren",
-  "T.Suresh","Niranjan","Kavi","Pakeer"
+  "Tharsan",
+  "M.Jana",
+  "Johnson",
+  "S.Ramesh",
+  "Puvinath",
+  "Kokilaraman",
+  "Anpalagan",
+  "Thiva",
+  "Muruka",
+  "Sathees",
+  "Nanthan",
+  "M.Suresh",
+  "Sivaratnam",
+  "Vikke",
+  "T.Sansu",
+  "Anutharsan",
+  "Rajasimman",
+  "S.Vikna",
+  "Paventhan",
+  "Srikanth",
+  "Jeyaraman",
+  "Ajanthan",
+  "Sasi",
+  "Mathavan",
+  "Rathees",
+  "Naren",
+  "T.Suresh",
+  "Niranjan",
+  "Kavi",
+  "Pakeer"
 ];
 
-/* 🔥 MULTI SELECT */
-function MultiSelect({ team, defaultValue = [], onChange }) {
+/* =========================
+   MULTI SELECT
+========================= */
+function MultiSelect({
+  team,
+  defaultValue = [],
+  onChange
+}) {
 
   const [input, setInput] = useState("");
+  const [selected, setSelected] =
+    useState(defaultValue);
+
+  useEffect(() => {
+    setSelected(defaultValue);
+  }, [defaultValue]);
 
   const filtered = membersList.filter(
     m =>
-      m.toLowerCase().includes(input.toLowerCase()) &&
-      !defaultValue.includes(m)
+      m
+        .toLowerCase()
+        .includes(input.toLowerCase()) &&
+      !selected.includes(m)
   );
 
   const addMember = (name) => {
 
-    const updated = [...defaultValue, name];
+    const updated = [...selected, name];
+
+    setSelected(updated);
 
     onChange(team, updated);
 
@@ -37,7 +84,11 @@ function MultiSelect({ team, defaultValue = [], onChange }) {
 
   const removeMember = (name) => {
 
-    const updated = defaultValue.filter(m => m !== name);
+    const updated = selected.filter(
+      m => m !== name
+    );
+
+    setSelected(updated);
 
     onChange(team, updated);
   };
@@ -45,15 +96,20 @@ function MultiSelect({ team, defaultValue = [], onChange }) {
   return (
     <div className="multi-select">
 
+      {/* TAGS */}
       <div className="tags">
 
-        {defaultValue.map(m => (
-          <span key={m} className="tag">
+        {selected.map(m => (
+          <span
+            key={m}
+            className="tag"
+          >
             {m}
 
             <button
-              type="button"
-              onClick={() => removeMember(m)}
+              onClick={() =>
+                removeMember(m)
+              }
             >
               ×
             </button>
@@ -63,12 +119,16 @@ function MultiSelect({ team, defaultValue = [], onChange }) {
 
       </div>
 
+      {/* INPUT */}
       <input
         placeholder="Type member..."
         value={input}
-        onChange={(e) => setInput(e.target.value)}
+        onChange={(e) =>
+          setInput(e.target.value)
+        }
       />
 
+      {/* DROPDOWN */}
       {input && (
         <div className="dropdown">
 
@@ -77,7 +137,9 @@ function MultiSelect({ team, defaultValue = [], onChange }) {
             filtered.map(m => (
               <div
                 key={m}
-                onClick={() => addMember(m)}
+                onClick={() =>
+                  addMember(m)
+                }
               >
                 {m}
               </div>
@@ -98,24 +160,37 @@ function MultiSelect({ team, defaultValue = [], onChange }) {
   );
 }
 
-/* 🔥 MAIN */
+/* =========================
+   MAIN COMPONENT
+========================= */
 export default function DailyUpdate() {
 
+  const today = new Date()
+    .toISOString()
+    .split("T")[0];
+
+  /* STEP */
   const [step, setStep] = useState(1);
 
-  const [teamMembers, setTeamMembers] = useState(() => {
+  /* AUTO SAVE TEAM MEMBERS */
+  const [teamMembers, setTeamMembers] =
+    useState(() => {
 
-    const saved = localStorage.getItem("teamMembers");
+      const saved =
+        localStorage.getItem(
+          "teamMembers"
+        );
 
-    return saved ? JSON.parse(saved) : {};
+      return saved
+        ? JSON.parse(saved)
+        : {};
+    });
 
-  });
+  /* TEAM DATA */
+  const [teamData, setTeamData] =
+    useState({});
 
-  const [teamData, setTeamData] = useState({});
-
-  const [success, setSuccess] = useState(false);
-
-  /* 🔥 SAVE LOCAL STORAGE */
+  /* AUTO SAVE */
   useEffect(() => {
 
     localStorage.setItem(
@@ -125,232 +200,531 @@ export default function DailyUpdate() {
 
   }, [teamMembers]);
 
-  /* 🔥 NEXT */
+  /* NEXT PAGE */
   const goNext = () => {
 
     const filtered = {};
 
-    Object.keys(teamMembers).forEach(team => {
+    Object.keys(teamMembers)
+      .forEach(team => {
 
-      if (teamMembers[team]?.length > 0) {
+        if (
+          teamMembers[team]?.length > 0
+        ) {
 
-        filtered[team] = {
+          filtered[team] =
+            teamData[team] || {
 
-          members: teamMembers[team],
+              members:
+                teamMembers[team],
 
-          ftthA: "",
-          ftthB: "",
+              ftthA: "",
+              ftthB: "",
 
-          pstnA: "",
-          pstnB: ""
+              pstnA: "",
+              pstnB: "",
 
-        };
-      }
+              dataA: "",
+              dataB: ""
+            };
+        }
 
-    });
+      });
 
     setTeamData(filtered);
 
     setStep(2);
   };
 
-  /* 🔥 UPDATE INPUT */
-  const update = (team, key, value) => {
+  /* UPDATE FAULT INPUTS */
+  const update = (
+    team,
+    key,
+    value
+  ) => {
 
     setTeamData(prev => ({
-
       ...prev,
 
       [team]: {
-
         ...prev[team],
-
         [key]: value
-
       }
-
     }));
-
   };
 
-  /* 🔥 SUBMIT */
+  /* GENERATE MESSAGE */
+  const generateMessage = () => {
+
+    return Object.keys(teamData)
+      .map(team => {
+
+        const t = teamData[team];
+
+        let msg =
+          `${team} ` +
+          `${t.members.join(", ")}`;
+
+        if (t.ftthA)
+          msg +=
+            ` FTTH-${t.ftthA}/${t.ftthB}`;
+
+        if (t.pstnA)
+          msg +=
+            ` PSTN-${t.pstnA}/${t.pstnB}`;
+
+        if (t.dataA)
+          msg +=
+            ` DATA-${t.dataA}/${t.dataB}`;
+
+        return msg;
+
+      })
+      .join("\n");
+  };
+
+  /* SEND */
   const submit = async () => {
 
-    for (const team of Object.keys(teamData)) {
+  try {
 
-      const t = teamData[team];
+    const message =
+      generateMessage();
 
-      const message = `
-${team}
+    console.log(message);
 
-Members:
-${t.members.join(", ")}
+    alert("Sent to Field");
 
-FTTH Assigned: ${t.ftthA}
-FTTH Attended: ${t.ftthB}
+    /* CLEAR SECOND PAGE DATA */
+    setTeamData({});
 
-PSTN Assigned: ${t.pstnA}
-PSTN Attended: ${t.pstnB}
-`;
+    /* GO BACK TO PAGE 1 */
+    setStep(1);
 
-      const { error } = await supabase
-        .from("notifications")
-        .insert([
-          {
-            team,
-            message
-          }
-        ]);
+  } catch (err) {
 
-      if (error) {
+    console.log(err);
 
-        console.log(error);
+    alert("Something went wrong");
 
-        alert("Database Error ❌");
+  }
 
-        return;
-      }
-    }
+};
 
-    /* 🔥 SUCCESS BOX */
-    setSuccess(true);
-
-    setTimeout(() => {
-
-      setSuccess(false);
-
-    }, 2500);
-
-  };
-
-  /* 🔥 END DAY */
+  /* END DAY */
   const endDay = () => {
 
-    localStorage.removeItem("teamMembers");
+    localStorage.removeItem(
+      "teamMembers"
+    );
 
     setTeamMembers({});
+
+    setTeamData({});
 
     setStep(1);
 
     alert("Day Closed ✅");
-
   };
 
   return (
-
     <div className="daily-page">
-
-      {/* 🔥 SUCCESS MESSAGE */}
-      {success && (
-        <div className="send-success-box">
-          🚀 Successfully sent to field team
-        </div>
-      )}
 
       <h1>Daily Update</h1>
 
-      {/* STEP 1 */}
+      {/* =========================
+          STEP 1
+      ========================= */}
       {step === 1 && (
         <>
 
-          <h3>Select Team Members</h3>
+          <h3>
+            Select Team Members
+          </h3>
 
           {allTeams.map(team => (
 
-            <div key={team} className="team-row">
+            <div
+              key={team}
+              className="team-row"
+            >
 
-              <label>{team}</label>
+              <label>
+                {team}
+              </label>
 
               <MultiSelect
                 team={team}
-                defaultValue={teamMembers[team] || []}
-                onChange={(team, selected) => {
+                defaultValue={
+                  teamMembers[team] || []
+                }
+                onChange={(
+                  team,
+                  selected
+                ) => {
 
-                  setTeamMembers(prev => ({
-
-                    ...prev,
-
-                    [team]: selected
-
-                  }));
+                  setTeamMembers(
+                    prev => ({
+                      ...prev,
+                      [team]:
+                        selected
+                    })
+                  );
 
                 }}
               />
 
             </div>
-
           ))}
 
-          <button className="next" onClick={goNext}>
-            Next →
-          </button>
+          <div className="buttons">
 
-          <button className="end" onClick={endDay}>
-            End for Today
-          </button>
+            <button
+              className="next"
+              onClick={goNext}
+            >
+              Next →
+            </button>
+
+            <button
+              className="end"
+              onClick={endDay}
+            >
+              End for Today
+            </button>
+
+          </div>
 
         </>
       )}
 
-      {/* STEP 2 */}
+      {/* =========================
+          STEP 2
+      ========================= */}
       {step === 2 && (
         <>
 
-          <h3>Enter Fault Details</h3>
+          <h3>
+            Enter Fault Details
+          </h3>
 
-          {Object.keys(teamData).map(team => {
+          {Object.keys(teamData)
+            .map((team, i) => {
 
-            const t = teamData[team];
+              const t = teamData[team];
 
-            return (
+              return (
+                <div
+                  key={team}
+                  className="team-card"
+                >
 
-              <div key={team} className="team-card">
+                  <h4>
+                    {team} —{" "}
+                    {t.members.join(", ")}
+                  </h4>
 
-                <h4>
-                  {team} — {t.members.join(", ")}
-                </h4>
+                  {/* FAULTS */}
+                  <div className="faults-grid">
 
-                <div className="faults">
+                    {/* FTTH */}
+                    <div className="fault-group">
 
-                  <input
-                    placeholder="FTTH Assigned"
-                    onChange={(e) =>
-                      update(team, "ftthA", e.target.value)
-                    }
-                  />
+                      <div className="fault-group-title">
+                        FTTH Faults
+                      </div>
 
-                  <input
-                    placeholder="FTTH Attended"
-                    onChange={(e) =>
-                      update(team, "ftthB", e.target.value)
-                    }
-                  />
+                      <div className="fault-pair">
 
-                  <input
-                    placeholder="PSTN Assigned"
-                    onChange={(e) =>
-                      update(team, "pstnA", e.target.value)
-                    }
-                  />
+                        <input
+                          type="number"
+                          placeholder="FTTH Assigned"
+                          value={t.ftthA}
+                          onChange={(e) =>
+                            update(
+                              team,
+                              "ftthA",
+                              e.target.value
+                            )
+                          }
+                        />
 
-                  <input
-                    placeholder="PSTN Attended"
-                    onChange={(e) =>
-                      update(team, "pstnB", e.target.value)
-                    }
-                  />
+                        <input
+                          type="number"
+                          placeholder="FTTH Attended"
+                          value={t.ftthB}
+                          onChange={(e) =>
+                            update(
+                              team,
+                              "ftthB",
+                              e.target.value
+                            )
+                          }
+                        />
+
+                      </div>
+
+                    </div>
+
+                    {/* PSTN */}
+                    <div className="fault-group">
+
+                      <div className="fault-group-title">
+                        PSTN Faults
+                      </div>
+
+                      <div className="fault-pair">
+
+                        <input
+                          type="number"
+                          placeholder="PSTN Assigned"
+                          value={t.pstnA}
+                          onChange={(e) =>
+                            update(
+                              team,
+                              "pstnA",
+                              e.target.value
+                            )
+                          }
+                        />
+
+                        <input
+                          type="number"
+                          placeholder="PSTN Attended"
+                          value={t.pstnB}
+                          onChange={(e) =>
+                            update(
+                              team,
+                              "pstnB",
+                              e.target.value
+                            )
+                          }
+                        />
+
+                      </div>
+
+                    </div>
+
+                    {/* DATA */}
+                    <div className="fault-group">
+
+                      <div className="fault-group-title">
+                        DATA Faults
+                      </div>
+
+                      <div className="fault-pair">
+
+                        <input
+                          type="number"
+                          placeholder="DATA Assigned"
+                          value={t.dataA}
+                          onChange={(e) =>
+                            update(
+                              team,
+                              "dataA",
+                              e.target.value
+                            )
+                          }
+                        />
+
+                        <input
+                          type="number"
+                          placeholder="DATA Attended"
+                          value={t.dataB}
+                          onChange={(e) =>
+                            update(
+                              team,
+                              "dataB",
+                              e.target.value
+                            )
+                          }
+                        />
+
+                      </div>
+
+                    </div>
+
+                  </div>
 
                 </div>
+              );
+            })}
 
-              </div>
-
-            );
-
-          })}
-
-          <button className="send" onClick={submit}>
-            Send to Field 🚀
+          {/* SEND */}
+          <button
+            className="send"
+            onClick={submit}
+          >
+            Send to Field 
           </button>
+
+          {/* TABLE */}
+          <div className="manager-section">
+
+            <div className="card">
+
+              <table>
+
+                <thead>
+
+                  <tr>
+
+                    <th>Team</th>
+
+                    <th>Members</th>
+
+                    <th>FTTH</th>
+
+                    <th>PSTN</th>
+
+                    <th>DATA</th>
+
+                    <th>Completion</th>
+
+                    <th>Status</th>
+
+                  </tr>
+
+                </thead>
+
+                <tbody>
+
+                  {Object.keys(teamData)
+                    .map((team, i) => {
+
+                      const t =
+                        teamData[team];
+
+                      const assigned =
+
+                        parseInt(
+                          t.ftthA || 0
+                        ) +
+
+                        parseInt(
+                          t.pstnA || 0
+                        ) +
+
+                        parseInt(
+                          t.dataA || 0
+                        );
+
+                      const attended =
+
+                        parseInt(
+                          t.ftthB || 0
+                        ) +
+
+                        parseInt(
+                          t.pstnB || 0
+                        ) +
+
+                        parseInt(
+                          t.dataB || 0
+                        );
+
+                      const percent =
+
+                        assigned > 0
+
+                          ? Math.round(
+                              (
+                                attended /
+                                assigned
+                              ) * 100
+                            )
+
+                          : 0;
+
+                      let status =
+                        "Done";
+
+                      if (
+                        percent < 100 &&
+                        percent >= 60
+                      ) {
+                        status =
+                          "Active";
+                      }
+
+                      if (
+                        percent < 60
+                      ) {
+                        status =
+                          "Behind";
+                      }
+
+                      return (
+                        <tr key={i}>
+
+                          <td>
+                            {team}
+                          </td>
+
+                          <td>
+                            {t.members.join(
+                              ", "
+                            )}
+                          </td>
+
+                          <td>
+                            {t.ftthA || 0}
+                            /
+                            {t.ftthB || 0}
+                          </td>
+
+                          <td>
+                            {t.pstnA || 0}
+                            /
+                            {t.pstnB || 0}
+                          </td>
+
+                          <td>
+                            {t.dataA || 0}
+                            /
+                            {t.dataB || 0}
+                          </td>
+
+                          <td>
+
+                            <div className="progress">
+
+                              <div
+                                style={{
+                                  width:
+                                    `${percent}%`
+                                }}
+                              ></div>
+
+                            </div>
+
+                            <span>
+                              {percent}%
+                            </span>
+
+                          </td>
+
+                          <td>
+
+                            <span
+                              className={`status ${status.toLowerCase()}`}
+                            >
+                              {status}
+                            </span>
+
+                          </td>
+
+                        </tr>
+                      );
+                    })}
+
+                </tbody>
+
+              </table>
+
+            </div>
+
+          </div>
 
         </>
       )}
