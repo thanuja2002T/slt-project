@@ -1,11 +1,69 @@
 import "./FieldApp.css";
-import { useState } from "react";
+import {
+  useState,
+  useEffect
+} from "react";
+
 import { useNavigate } from "react-router-dom";
-import { IoArrowBack } from "react-icons/io5";
+
+import {
+  IoArrowBack,
+  IoNotifications
+} from "react-icons/io5";
 
 export default function FieldApp() {
 
   const navigate = useNavigate();
+
+  /* =========================
+     NOTIFICATIONS
+  ========================= */
+
+  const [showNotifications, setShowNotifications] =
+    useState(false);
+
+  const [notifications, setNotifications] =
+    useState([]);
+
+  useEffect(() => {
+
+    const today =
+      new Date()
+        .toISOString()
+        .split("T")[0];
+
+    const savedDate =
+      localStorage.getItem(
+        "notificationDate"
+      );
+
+    /* CLEAR NEXT DAY */
+    if (savedDate !== today) {
+
+      localStorage.removeItem(
+        "fieldNotifications"
+      );
+
+      localStorage.setItem(
+        "notificationDate",
+        today
+      );
+
+      setNotifications([]);
+
+      return;
+    }
+
+    const saved =
+      JSON.parse(
+        localStorage.getItem(
+          "fieldNotifications"
+        )
+      ) || [];
+
+    setNotifications(saved);
+
+  }, []);
 
   /* =========================
      STATES
@@ -29,12 +87,14 @@ export default function FieldApp() {
   const [finished, setFinished] =
     useState(false);
 
-  /* 🔥 NEW */
   const [showToast, setShowToast] =
     useState(false);
 
   const [blinkCard, setBlinkCard] =
     useState(false);
+
+  const [finishBlink, setFinishBlink] =
+  useState(false);  
 
   /* =========================
      VEHICLES
@@ -185,10 +245,8 @@ export default function FieldApp() {
       faultCount + 1
     );
 
-    /* 🔥 TOAST */
     setShowToast(true);
 
-    /* 🔥 BLINK */
     setBlinkCard(true);
 
     setTimeout(() => {
@@ -207,8 +265,14 @@ export default function FieldApp() {
 
   const handleFinish = () => {
 
+  setFinishBlink(true);
+
+  setTimeout(() => {
+
     setFinished(true);
-  };
+
+  }, 700);
+};
 
   const completedFaults =
     faultCount - 1;
@@ -220,7 +284,7 @@ export default function FieldApp() {
   return (
     <div className="field-layout">
 
-      {/* 🔥 SUCCESS TOAST */}
+      {/* TOAST */}
       {showToast && (
 
         <div className="toast-success">
@@ -228,6 +292,85 @@ export default function FieldApp() {
         </div>
 
       )}
+
+      {/* BELL */}
+      <div className="notification-wrapper">
+
+        <button
+          className="bell-btn"
+          onClick={() =>
+            setShowNotifications(
+              !showNotifications
+            )
+          }
+        >
+          <IoNotifications />
+
+          {notifications.length > 0 && (
+            <span className="bell-count">
+              {notifications.length}
+            </span>
+          )}
+
+        </button>
+
+      </div>
+
+      
+{/* NOTIFICATION PANEL */}
+{showNotifications && (
+
+  <div className="notification-panel">
+
+    <div className="notification-header">
+
+      <h3>
+        Field Notifications
+      </h3>
+
+      <button
+        className="close-notify"
+        onClick={() =>
+          setShowNotifications(false)
+        }
+      >
+        ✕
+      </button>
+
+    </div>
+
+    {notifications.length === 0 ? (
+
+      <p className="empty-msg">
+        No notifications today
+      </p>
+
+    ) : (
+
+      notifications.map(note => (
+
+        <div
+          key={note.id}
+          className="notify-card"
+        >
+
+          <div className="notify-time">
+            {note.time}
+          </div>
+
+          <pre className="notify-message">
+            {note.message}
+          </pre>
+
+        </div>
+
+      ))
+
+    )}
+
+  </div>
+
+)}
 
       {/* BACK BUTTON */}
       <button
@@ -239,7 +382,7 @@ export default function FieldApp() {
         <IoArrowBack />
       </button>
 
-      {/* TOP SECTION */}
+      {/* TOP */}
       <div className="top-section">
 
         <h1>Field App</h1>
@@ -269,32 +412,24 @@ export default function FieldApp() {
 
               <div className="suggestions">
 
-                {filteredVehicles.length > 0 ? (
+                {filteredVehicles.map(
+                  (v, i) => (
 
-                  filteredVehicles.map(
-                    (v, i) => (
+                    <div
+                      key={i}
+                      className="suggestion-item"
+                      onClick={() =>
+                        setVehicleInput(v)
+                      }
+                    >
+                      {v}
+                    </div>
 
-                      <div
-                        key={i}
-                        className="suggestion-item"
-                        onClick={() =>
-                          setVehicleInput(v)
-                        }
-                      >
-                        {v}
-                      </div>
-                    )
                   )
-
-                ) : (
-
-                  <div className="suggestion-item">
-                    No vehicle found
-                  </div>
-
                 )}
 
               </div>
+
             )}
 
           </div>
@@ -322,35 +457,26 @@ export default function FieldApp() {
 
               <div className="suggestions">
 
-                {filteredMembers.length > 0 ? (
+                {filteredMembers.map(
+                  (m, i) => (
 
-                  filteredMembers.map(
-                    (m, i) => (
+                    <div
+                      key={i}
+                      className="suggestion-item"
+                      onClick={() =>
+                        addMember(m)
+                      }
+                    >
+                      {m}
+                    </div>
 
-                      <div
-                        key={i}
-                        className="suggestion-item"
-                        onClick={() =>
-                          addMember(m)
-                        }
-                      >
-                        {m}
-                      </div>
-                    )
                   )
-
-                ) : (
-
-                  <div className="suggestion-item">
-                    No member found
-                  </div>
-
                 )}
 
               </div>
+
             )}
 
-            {/* SELECTED MEMBERS */}
             <div className="selected-members">
 
               {selectedMembers.map(
@@ -372,6 +498,7 @@ export default function FieldApp() {
                     </span>
 
                   </div>
+
                 )
               )}
 
@@ -379,7 +506,6 @@ export default function FieldApp() {
 
           </div>
 
-          {/* START BUTTON */}
           {!started && (
             <button
               className="submit-btn"
@@ -427,18 +553,36 @@ export default function FieldApp() {
 
             </div>
 
-            <div className="thank-box">
+            <div
+  className={`thank-box ${
+    finishBlink
+      ? "finish-blink"
+      : ""
+  }`}
+>
 
-              <h2>
-                🎉 You completed{" "}
-                {completedFaults} faults today
-              </h2>
+  <div className="celebrate-icon">
+    🚀
+  </div>
 
-              <p>
-                Have a nice day 🙌
-              </p>
+  <h2 className="finish-title">
 
-            </div>
+    You have completed{" "}
+    {completedFaults} faults today
+
+  </h2>
+
+  <p className="finish-sub">
+
+    Vehicle In Successfully ✅
+
+  </p>
+
+  <span className="finish-wave">
+    🎉 Have a Nice Day 🙌
+  </span>
+
+</div>
           </>
 
         ) : (
@@ -462,7 +606,6 @@ export default function FieldApp() {
 
             </div>
 
-            {/* 🔥 BLINK EFFECT */}
             <div
               className={`fault-box ${
                 blinkCard
@@ -488,7 +631,7 @@ export default function FieldApp() {
                   className="finish-btn"
                   onClick={handleFinish}
                 >
-                  Finish for Today 
+                  Finish for Today and Vehicle in ✔
                 </button>
 
               </div>

@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { api } from "../../../api";
 import "./DailyUpdate.css";
 
 /* =========================
@@ -55,7 +54,9 @@ function MultiSelect({
   onChange
 }) {
 
-  const [input, setInput] = useState("");
+  const [input, setInput] =
+    useState("");
+
   const [selected, setSelected] =
     useState(defaultValue);
 
@@ -63,17 +64,23 @@ function MultiSelect({
     setSelected(defaultValue);
   }, [defaultValue]);
 
-  const filtered = membersList.filter(
-    m =>
-      m
-        .toLowerCase()
-        .includes(input.toLowerCase()) &&
-      !selected.includes(m)
-  );
+  const filtered =
+    membersList.filter(
+      m =>
+        m
+          .toLowerCase()
+          .includes(
+            input.toLowerCase()
+          ) &&
+        !selected.includes(m)
+    );
 
   const addMember = (name) => {
 
-    const updated = [...selected, name];
+    const updated = [
+      ...selected,
+      name
+    ];
 
     setSelected(updated);
 
@@ -84,9 +91,10 @@ function MultiSelect({
 
   const removeMember = (name) => {
 
-    const updated = selected.filter(
-      m => m !== name
-    );
+    const updated =
+      selected.filter(
+        m => m !== name
+      );
 
     setSelected(updated);
 
@@ -96,14 +104,15 @@ function MultiSelect({
   return (
     <div className="multi-select">
 
-      {/* TAGS */}
       <div className="tags">
 
         {selected.map(m => (
+
           <span
             key={m}
             className="tag"
           >
+
             {m}
 
             <button
@@ -115,26 +124,29 @@ function MultiSelect({
             </button>
 
           </span>
+
         ))}
 
       </div>
 
-      {/* INPUT */}
       <input
         placeholder="Type member..."
         value={input}
         onChange={(e) =>
-          setInput(e.target.value)
+          setInput(
+            e.target.value
+          )
         }
       />
 
-      {/* DROPDOWN */}
       {input && (
+
         <div className="dropdown">
 
           {filtered.length > 0 ? (
 
             filtered.map(m => (
+
               <div
                 key={m}
                 onClick={() =>
@@ -143,6 +155,7 @@ function MultiSelect({
               >
                 {m}
               </div>
+
             ))
 
           ) : (
@@ -154,6 +167,7 @@ function MultiSelect({
           )}
 
         </div>
+
       )}
 
     </div>
@@ -165,12 +179,8 @@ function MultiSelect({
 ========================= */
 export default function DailyUpdate() {
 
-  const today = new Date()
-    .toISOString()
-    .split("T")[0];
-
-  /* STEP */
-  const [step, setStep] = useState(1);
+  const [step, setStep] =
+    useState(1);
 
   /* AUTO SAVE TEAM MEMBERS */
   const [teamMembers, setTeamMembers] =
@@ -195,7 +205,10 @@ export default function DailyUpdate() {
 
     localStorage.setItem(
       "teamMembers",
-      JSON.stringify(teamMembers)
+
+      JSON.stringify(
+        teamMembers
+      )
     );
 
   }, [teamMembers]);
@@ -209,7 +222,8 @@ export default function DailyUpdate() {
       .forEach(team => {
 
         if (
-          teamMembers[team]?.length > 0
+          teamMembers[team]
+            ?.length > 0
         ) {
 
           filtered[team] =
@@ -236,7 +250,7 @@ export default function DailyUpdate() {
     setStep(2);
   };
 
-  /* UPDATE FAULT INPUTS */
+  /* UPDATE */
   const update = (
     team,
     key,
@@ -244,12 +258,17 @@ export default function DailyUpdate() {
   ) => {
 
     setTeamData(prev => ({
+
       ...prev,
 
       [team]: {
+
         ...prev[team],
+
         [key]: value
+
       }
+
     }));
   };
 
@@ -259,7 +278,8 @@ export default function DailyUpdate() {
     return Object.keys(teamData)
       .map(team => {
 
-        const t = teamData[team];
+        const t =
+          teamData[team];
 
         let msg =
           `${team} ` +
@@ -286,36 +306,114 @@ export default function DailyUpdate() {
   /* SEND */
   const submit = async () => {
 
-  try {
+    try {
 
-    const message =
-      generateMessage();
+      const message =
+        generateMessage();
 
-    console.log(message);
+      console.log(message);
 
-    alert("Sent to Field");
+      /* TODAY */
+      const today =
+        new Date()
+          .toISOString()
+          .split("T")[0];
 
-    /* CLEAR SECOND PAGE DATA */
-    setTeamData({});
+      /* TIME */
+      const time =
+        new Date()
+          .toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit"
+          });
 
-    /* GO BACK TO PAGE 1 */
-    setStep(1);
+      /* OLD */
+      const oldNotifications =
+        JSON.parse(
+          localStorage.getItem(
+            "fieldNotifications"
+          )
+        ) || [];
 
-  } catch (err) {
+      /* DATE CHECK */
+      const savedDate =
+        localStorage.getItem(
+          "notificationDate"
+        );
 
-    console.log(err);
+      let updatedNotifications =
+        oldNotifications;
 
-    alert("Something went wrong");
+      /* NEW DAY */
+      if (savedDate !== today) {
 
-  }
+        updatedNotifications = [];
 
-};
+        localStorage.setItem(
+          "notificationDate",
+          today
+        );
+      }
+
+      /* NEW MESSAGE */
+      const newNotification = {
+
+        id: Date.now(),
+
+        time,
+
+        message
+
+      };
+
+      updatedNotifications.unshift(
+        newNotification
+      );
+
+      /* SAVE */
+      localStorage.setItem(
+        "fieldNotifications",
+
+        JSON.stringify(
+          updatedNotifications
+        )
+      );
+
+      alert(
+        "Sent to Field ✅"
+      );
+
+      /* CLEAR PAGE 2 */
+      setTeamData({});
+
+      /* RETURN PAGE 1 */
+      setStep(1);
+
+    } catch (err) {
+
+      console.log(err);
+
+      alert(
+        "Something went wrong"
+      );
+
+    }
+
+  };
 
   /* END DAY */
   const endDay = () => {
 
     localStorage.removeItem(
       "teamMembers"
+    );
+
+    localStorage.removeItem(
+      "fieldNotifications"
+    );
+
+    localStorage.removeItem(
+      "notificationDate"
     );
 
     setTeamMembers({});
@@ -332,9 +430,7 @@ export default function DailyUpdate() {
 
       <h1>Daily Update</h1>
 
-      {/* =========================
-          STEP 1
-      ========================= */}
+      {/* STEP 1 */}
       {step === 1 && (
         <>
 
@@ -365,9 +461,12 @@ export default function DailyUpdate() {
 
                   setTeamMembers(
                     prev => ({
+
                       ...prev,
+
                       [team]:
                         selected
+
                     })
                   );
 
@@ -375,6 +474,7 @@ export default function DailyUpdate() {
               />
 
             </div>
+
           ))}
 
           <div className="buttons">
@@ -398,9 +498,7 @@ export default function DailyUpdate() {
         </>
       )}
 
-      {/* =========================
-          STEP 2
-      ========================= */}
+      {/* STEP 2 */}
       {step === 2 && (
         <>
 
@@ -409,11 +507,13 @@ export default function DailyUpdate() {
           </h3>
 
           {Object.keys(teamData)
-            .map((team, i) => {
+            .map(team => {
 
-              const t = teamData[team];
+              const t =
+                teamData[team];
 
               return (
+
                 <div
                   key={team}
                   className="team-card"
@@ -424,7 +524,6 @@ export default function DailyUpdate() {
                     {t.members.join(", ")}
                   </h4>
 
-                  {/* FAULTS */}
                   <div className="faults-grid">
 
                     {/* FTTH */}
@@ -547,188 +646,189 @@ export default function DailyUpdate() {
                   </div>
 
                 </div>
+
               );
             })}
 
-          {/* SEND */}
           <button
             className="send"
             onClick={submit}
           >
-            Send to Field 
+            Send to Field
           </button>
+{/* TABLE */}
+<div className="manager-section">
 
-          {/* TABLE */}
-          <div className="manager-section">
+  <div className="card">
 
-            <div className="card">
+    <table>
 
-              <table>
+      <thead>
 
-                <thead>
+        <tr>
 
-                  <tr>
+          <th>Team</th>
 
-                    <th>Team</th>
+          <th>Members</th>
 
-                    <th>Members</th>
+          <th>FTTH</th>
 
-                    <th>FTTH</th>
+          <th>PSTN</th>
 
-                    <th>PSTN</th>
+          <th>DATA</th>
 
-                    <th>DATA</th>
+          <th>Completion</th>
 
-                    <th>Completion</th>
+          <th>Status</th>
 
-                    <th>Status</th>
+        </tr>
 
-                  </tr>
+      </thead>
 
-                </thead>
+      <tbody>
 
-                <tbody>
+        {Object.keys(teamData)
+          .map((team, i) => {
 
-                  {Object.keys(teamData)
-                    .map((team, i) => {
+            const t =
+              teamData[team];
 
-                      const t =
-                        teamData[team];
+            const assigned =
 
-                      const assigned =
+              parseInt(
+                t.ftthA || 0
+              ) +
 
-                        parseInt(
-                          t.ftthA || 0
-                        ) +
+              parseInt(
+                t.pstnA || 0
+              ) +
 
-                        parseInt(
-                          t.pstnA || 0
-                        ) +
+              parseInt(
+                t.dataA || 0
+              );
 
-                        parseInt(
-                          t.dataA || 0
-                        );
+            const attended =
 
-                      const attended =
+              parseInt(
+                t.ftthB || 0
+              ) +
 
-                        parseInt(
-                          t.ftthB || 0
-                        ) +
+              parseInt(
+                t.pstnB || 0
+              ) +
 
-                        parseInt(
-                          t.pstnB || 0
-                        ) +
+              parseInt(
+                t.dataB || 0
+              );
 
-                        parseInt(
-                          t.dataB || 0
-                        );
+            const percent =
 
-                      const percent =
+              assigned > 0
 
-                        assigned > 0
+                ? Math.round(
+                    (
+                      attended /
+                      assigned
+                    ) * 100
+                  )
 
-                          ? Math.round(
-                              (
-                                attended /
-                                assigned
-                              ) * 100
-                            )
+                : 0;
 
-                          : 0;
+            let status =
+              "Done";
 
-                      let status =
-                        "Done";
+            if (
+              percent < 100 &&
+              percent >= 60
+            ) {
 
-                      if (
-                        percent < 100 &&
-                        percent >= 60
-                      ) {
-                        status =
-                          "Active";
-                      }
+              status =
+                "Active";
+            }
 
-                      if (
-                        percent < 60
-                      ) {
-                        status =
-                          "Behind";
-                      }
+            if (
+              percent < 60
+            ) {
 
-                      return (
-                        <tr key={i}>
+              status =
+                "Behind";
+            }
 
-                          <td>
-                            {team}
-                          </td>
+            return (
 
-                          <td>
-                            {t.members.join(
-                              ", "
-                            )}
-                          </td>
+              <tr key={i}>
 
-                          <td>
-                            {t.ftthA || 0}
-                            /
-                            {t.ftthB || 0}
-                          </td>
+                <td>
+                  {team}
+                </td>
 
-                          <td>
-                            {t.pstnA || 0}
-                            /
-                            {t.pstnB || 0}
-                          </td>
+                <td>
+                  {t.members.join(", ")}
+                </td>
 
-                          <td>
-                            {t.dataA || 0}
-                            /
-                            {t.dataB || 0}
-                          </td>
+                <td>
+                  {t.ftthA || 0}
+                  /
+                  {t.ftthB || 0}
+                </td>
 
-                          <td>
+                <td>
+                  {t.pstnA || 0}
+                  /
+                  {t.pstnB || 0}
+                </td>
 
-                            <div className="progress">
+                <td>
+                  {t.dataA || 0}
+                  /
+                  {t.dataB || 0}
+                </td>
 
-                              <div
-                                style={{
-                                  width:
-                                    `${percent}%`
-                                }}
-                              ></div>
+                <td>
 
-                            </div>
+                  <div className="progress">
 
-                            <span>
-                              {percent}%
-                            </span>
+                    <div
+                      style={{
+                        width:
+                          `${percent}%`
+                      }}
+                    ></div>
 
-                          </td>
+                  </div>
 
-                          <td>
+                  <span>
+                    {percent}%
+                  </span>
 
-                            <span
-                              className={`status ${status.toLowerCase()}`}
-                            >
-                              {status}
-                            </span>
+                </td>
 
-                          </td>
+                <td>
 
-                        </tr>
-                      );
-                    })}
+                  <span
+                    className={`status ${status.toLowerCase()}`}
+                  >
+                    {status}
+                  </span>
 
-                </tbody>
+                </td>
 
-              </table>
+              </tr>
 
-            </div>
+            );
+          })}
 
-          </div>
+      </tbody>
 
+    </table>
+
+  </div>
+
+</div>
         </>
       )}
 
     </div>
   );
 }
+
