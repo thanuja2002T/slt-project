@@ -11,7 +11,7 @@ import Summary from "./pages/admin/Summary/Summary";
 import Analysis from "./pages/admin/Analysis/Analysis";
 import Notifications from "./pages/admin/Notification/Notifications";
 
-import FieldApp from "./pages/Filed/FieldApp";
+import FieldApp from "./pages/Field/FieldApp";
 
 function App() {
   return (
