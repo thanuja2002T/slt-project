@@ -428,3 +428,189 @@ body {
     transform: translateX(100px);
   }
 }
+
+/* =========================================
+   MOBILE RESPONSIVE
+========================================= */
+
+@media (max-width: 768px) {
+
+  body{
+    overflow-x: hidden;
+  }
+
+  .login-container{
+    flex-direction: column;
+    min-height: 100vh;
+    height: auto;
+  }
+
+  /* LEFT PANEL */
+  .left-panel{
+
+    width: 100%;
+    min-height: 42vh;
+
+    padding: 50px 35px;
+
+    justify-content: center;
+    align-items: flex-start;
+
+    box-sizing: border-box;
+
+    border-radius: 0 !important;
+  }
+
+  .left-panel h1{
+    font-size: 54px;
+    line-height: 1.05;
+    margin-bottom: 14px;
+  }
+
+  .left-panel p{
+    font-size: 16px;
+    line-height: 1.7;
+    max-width: 240px;
+  }
+
+  .glow{
+    width: 240px;
+    height: 240px;
+
+    left: -40px;
+    bottom: 10px;
+
+    opacity: 0.35;
+  }
+
+  /* RIGHT PANEL */
+  .right-panel{
+
+    width: 100%;
+    min-height: 58vh;
+
+    padding: 45px 30px;
+
+    justify-content: flex-start;
+    align-items: flex-start;
+
+    box-sizing: border-box;
+
+    border-radius: 0 !important;
+  }
+
+  .right-panel > *{
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .status{
+    font-size: 12px;
+    margin-bottom: 12px;
+  }
+
+  .right-panel h2{
+    font-size: 42px;
+    line-height: 1.2;
+    margin-bottom: 24px;
+  }
+
+  /* ROLE */
+  .role-container{
+    width: 100%;
+    gap: 12px;
+    margin-bottom: 25px;
+  }
+
+  .role-card{
+    padding: 22px 10px;
+    border-radius: 14px;
+  }
+
+  .role-card h3{
+    font-size: 20px;
+    margin-top: 10px;
+  }
+
+  /* INPUT */
+  .input-group{
+    width: 100%;
+  }
+
+  .input-group label{
+    font-size: 13px;
+  }
+
+  .input-group input{
+    width: 100%;
+    padding: 16px;
+    font-size: 16px;
+    margin-top: 8px;
+  }
+
+  /* BUTTON */
+  .login-btn{
+    width: 100%;
+    padding: 17px;
+    font-size: 17px;
+    margin-top: 28px;
+  }
+
+  /* TODAY UPDATE */
+  .today-update-box{
+    padding: 16px;
+    border-radius: 14px;
+  }
+
+  .today-update-box p{
+    font-size: 15px;
+  }
+
+  .today-update-box span{
+    display: none;
+  }
+
+  /* POPUP */
+  .update-popup{
+    width: 94%;
+    max-height: 85vh;
+
+    border-radius: 24px;
+  }
+
+  .popup-header{
+    padding: 18px;
+  }
+
+  .popup-header h2{
+    font-size: 22px;
+  }
+
+  .popup-content{
+    padding: 18px;
+    max-height: 65vh;
+  }
+
+  .message-card{
+    padding: 16px;
+    border-radius: 14px;
+  }
+
+  .message-card pre{
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  /* TOAST */
+  .toast-error{
+
+    left: 15px;
+    right: 15px;
+    top: 15px;
+
+    text-align: center;
+
+    border-radius: 14px;
+  }
+
+}

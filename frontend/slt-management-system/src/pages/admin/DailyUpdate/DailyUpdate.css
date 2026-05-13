@@ -379,3 +379,156 @@ td {
     grid-template-columns: 1fr;
   }
 }
+
+/* =========================
+   MOBILE FULL FIX
+========================= */
+
+@media (max-width: 768px) {
+
+  .daily-page {
+    padding: 18px;
+    overflow-x: hidden;
+  }
+
+  .daily-page h1 {
+    font-size: 26px;
+    line-height: 1.2;
+    margin-bottom: 24px;
+  }
+
+  .daily-page h3 {
+    font-size: 18px;
+    margin-bottom: 20px;
+  }
+
+  /* TEAM BOX */
+
+  .team-row {
+    width: 100%;
+    padding: 20px;
+    margin-bottom: 22px;
+    border-radius: 24px;
+    box-sizing: border-box;
+  }
+
+  .team-row label {
+    font-size: 18px;
+    margin-bottom: 14px;
+  }
+
+  /* INPUT */
+
+  .multi-select input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 15px;
+    font-size: 15px;
+    border-radius: 16px;
+  }
+
+  /* TAGS */
+
+  .tags {
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .tag {
+    font-size: 13px;
+    padding: 8px 12px;
+  }
+
+  /* DROPDOWN */
+
+  .dropdown {
+    width: 100%;
+    box-sizing: border-box;
+    max-height: 180px;
+    border-radius: 16px;
+  }
+
+  .dropdown div {
+    padding: 14px;
+    font-size: 14px;
+  }
+
+  /* BUTTONS */
+
+  .buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-top: 24px;
+  }
+
+  .next,
+  .end,
+  .send {
+    width: 100%;
+    margin: 0;
+    padding: 16px;
+    font-size: 15px;
+    border-radius: 16px;
+  }
+
+  /* STEP 2 */
+
+  .team-card {
+    padding: 20px;
+    border-radius: 24px;
+    overflow: hidden;
+  }
+
+  .team-card h4 {
+    font-size: 20px;
+    line-height: 1.5;
+    margin-bottom: 20px;
+  }
+
+  /* FAULT GRID */
+
+  .faults-grid {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .fault-group {
+    padding: 18px;
+    border-radius: 18px;
+  }
+
+  .fault-group-title {
+    font-size: 16px;
+  }
+
+  .fault-pair input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 14px;
+    font-size: 14px;
+  }
+
+  /* TABLE */
+
+  .manager-section {
+    margin-top: 30px;
+  }
+
+  .card {
+    padding: 14px;
+    overflow-x: auto;
+    border-radius: 20px;
+  }
+
+  table {
+    min-width: 900px;
+  }
+
+  th,
+  td {
+    padding: 12px;
+    font-size: 13px;
+  }
+
+}
