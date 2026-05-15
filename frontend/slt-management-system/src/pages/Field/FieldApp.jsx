@@ -1,4 +1,5 @@
 import "./FieldApp.css";
+
 import {
   useState,
   useEffect
@@ -10,6 +11,8 @@ import {
   IoArrowBack,
   IoNotifications
 } from "react-icons/io5";
+
+import { supabase } from "../../lib/supabase";
 
 export default function FieldApp() {
 
@@ -88,13 +91,22 @@ export default function FieldApp() {
     useState(false);
 
   const [showToast, setShowToast] =
-    useState(false);
+  useState(false);
+
+  const [entryPopup, setEntryPopup] =
+  useState(false);
+
+  const [popupMessage, setPopupMessage] =
+  useState("");
 
   const [blinkCard, setBlinkCard] =
     useState(false);
 
   const [finishBlink, setFinishBlink] =
-  useState(false);  
+    useState(false);
+
+  const [faultType, setFaultType] =
+    useState("FTTH");
 
   /* =========================
      VEHICLES
@@ -217,10 +229,10 @@ export default function FieldApp() {
   };
 
   /* =========================
-     START
+     VEHICLE OUT
   ========================= */
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
 
     if (
       !vehicleInput ||
@@ -232,14 +244,70 @@ export default function FieldApp() {
       return;
     }
 
-    setStarted(true);
+    const vehicleOutTime =
+      new Date().toISOString();
+
+    const { error } = await supabase
+      .from("field_work")
+      .insert([
+        {
+          vehicle: vehicleInput,
+          members: selectedMembers,
+          vehicle_out_time:
+            vehicleOutTime,
+          status: "Vehicle Out"
+        }
+      ]);
+
+    if (error) {
+
+      console.log(error);
+
+      alert("Database error");
+
+      return;
+    }
+
+    showEntryPopup(
+  "Vehicle Out Entry Added "
+);
+
+setStarted(true);
   };
 
   /* =========================
-     NEXT FAULT
+     FAULT COMPLETE
   ========================= */
 
-  const handleNext = () => {
+  const handleNext = async () => {
+
+    const completedTime =
+      new Date().toISOString();
+
+    const { error } = await supabase
+      .from("field_work")
+      .insert([
+        {
+          vehicle: vehicleInput,
+          members: selectedMembers,
+          fault_number: faultCount,
+          fault_type: faultType,
+          completed_time:
+            completedTime,
+          status: "Fault Completed"
+        }
+      ]);
+
+    if (error) {
+
+      console.log(error);
+
+      alert("Save failed");
+
+      return;
+    }
+
+    showEntryPopup(`Fault ${faultCount} Completed`);
 
     setFaultCount(
       faultCount + 1
@@ -263,19 +331,65 @@ export default function FieldApp() {
      FINISH
   ========================= */
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
 
-  setFinishBlink(true);
+    const finishTime =
+      new Date().toISOString();
 
-  setTimeout(() => {
+    const completedFaults =
+      faultCount - 1;
 
-    setFinished(true);
+    const { error } = await supabase
+      .from("field_work")
+      .insert([
+        {
+          vehicle: vehicleInput,
+          members: selectedMembers,
+          finish_time: finishTime,
+          vehicle_in_time:
+            finishTime,
+          total_faults:
+            completedFaults,
+          status: "Vehicle In"
+        }
+      ]);
 
-  }, 700);
-};
+    if (error) {
+
+      console.log(error);
+
+      alert("Finish save failed");
+
+      return;
+    }
+
+    showEntryPopup(
+     "Vehicle In Saved Successfully"
+    );
+
+    setTimeout(() => {
+
+      setFinished(true);
+
+    }, 700);
+  };
 
   const completedFaults =
     faultCount - 1;
+
+  const showEntryPopup = (message) => {
+
+  setPopupMessage(message);
+
+  setEntryPopup(true);
+
+  setTimeout(() => {
+
+    setEntryPopup(false);
+
+  }, 2500);
+
+};  
 
   /* =========================
      JSX
@@ -285,13 +399,30 @@ export default function FieldApp() {
     <div className="field-layout">
 
       {/* TOAST */}
-      {showToast && (
+{/* ENTRY POPUP */}
+{entryPopup && (
 
-        <div className="toast-success">
-          Fault Completed Successfully ✓
-        </div>
+  <div className="entry-popup">
 
-      )}
+    <div className="popup-icon">
+      ✓
+    </div>
+
+    <div>
+
+      <h4>
+        Entry Added
+      </h4>
+
+      <p>
+        {popupMessage}
+      </p>
+
+    </div>
+
+  </div>
+
+)}
 
       {/* BELL */}
       <div className="notification-wrapper">
@@ -316,61 +447,60 @@ export default function FieldApp() {
 
       </div>
 
-      
-{/* NOTIFICATION PANEL */}
-{showNotifications && (
+      {/* NOTIFICATION PANEL */}
+      {showNotifications && (
 
-  <div className="notification-panel">
+        <div className="notification-panel">
 
-    <div className="notification-header">
+          <div className="notification-header">
 
-      <h3>
-        Field Notifications
-      </h3>
+            <h3>
+              Field Notifications
+            </h3>
 
-      <button
-        className="close-notify"
-        onClick={() =>
-          setShowNotifications(false)
-        }
-      >
-        ✕
-      </button>
+            <button
+              className="close-notify"
+              onClick={() =>
+                setShowNotifications(false)
+              }
+            >
+              ✕
+            </button>
 
-    </div>
-
-    {notifications.length === 0 ? (
-
-      <p className="empty-msg">
-        No notifications today
-      </p>
-
-    ) : (
-
-      notifications.map(note => (
-
-        <div
-          key={note.id}
-          className="notify-card"
-        >
-
-          <div className="notify-time">
-            {note.time}
           </div>
 
-          <pre className="notify-message">
-            {note.message}
-          </pre>
+          {notifications.length === 0 ? (
+
+            <p className="empty-msg">
+              No notifications today
+            </p>
+
+          ) : (
+
+            notifications.map(note => (
+
+              <div
+                key={note.id}
+                className="notify-card"
+              >
+
+                <div className="notify-time">
+                  {note.time}
+                </div>
+
+                <pre className="notify-message">
+                  {note.message}
+                </pre>
+
+              </div>
+
+            ))
+
+          )}
 
         </div>
 
-      ))
-
-    )}
-
-  </div>
-
-)}
+      )}
 
       {/* BACK BUTTON */}
       <button
@@ -511,7 +641,7 @@ export default function FieldApp() {
               className="submit-btn"
               onClick={handleSubmit}
             >
-              Start →
+              Vehicle Out →
             </button>
           )}
 
@@ -554,35 +684,35 @@ export default function FieldApp() {
             </div>
 
             <div
-  className={`thank-box ${
-    finishBlink
-      ? "finish-blink"
-      : ""
-  }`}
->
+              className={`thank-box ${
+                finishBlink
+                  ? "finish-blink"
+                  : ""
+              }`}
+            >
 
-  <div className="celebrate-icon">
-    🚀
-  </div>
+              <div className="celebrate-icon">
+                🚀
+              </div>
 
-  <h2 className="finish-title">
+              <h2 className="finish-title">
 
-    You have completed{" "}
-    {completedFaults} faults today
+                You have completed{" "}
+                {completedFaults} faults today
 
-  </h2>
+              </h2>
 
-  <p className="finish-sub">
+              <p className="finish-sub">
 
-    Vehicle In Successfully ✅
+                Vehicle In Successfully ✅
 
-  </p>
+              </p>
 
-  <span className="finish-wave">
-    🎉 Have a Nice Day 🙌
-  </span>
+              <span className="finish-wave">
+                🎉 Have a Nice Day 🙌
+              </span>
 
-</div>
+            </div>
           </>
 
         ) : (
@@ -618,6 +748,7 @@ export default function FieldApp() {
                 Fault {faultCount}
               </h2>
 
+              
               <div className="btn-group">
 
                 <button

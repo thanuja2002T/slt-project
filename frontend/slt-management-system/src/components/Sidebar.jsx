@@ -14,6 +14,7 @@ export default function Sidebar({ open, setOpen }) {
           <Link to="/analysis" onClick={() => setOpen(false)}>🔍 Analysis</Link>
           <Link to="/summary" onClick={() => setOpen(false)}>📈 Summary</Link>
           <Link to="/notifications" onClick={() => setOpen(false)}>🔔 Notifications</Link>
+          <Link to="/settings" onClick={() => setOpen(false)}>⚙️ Settings</Link>
         </nav>
       </div>
 

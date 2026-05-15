@@ -10,7 +10,7 @@ import DailyUpdate from "./pages/admin/DailyUpdate/DailyUpdate";
 import Summary from "./pages/admin/Summary/Summary";
 import Analysis from "./pages/admin/Analysis/Analysis";
 import Notifications from "./pages/admin/Notification/Notifications";
-
+import Settings from "./pages/admin/Setting/setting" 
 import FieldApp from "./pages/Field/FieldApp";
 
 function App() {
@@ -40,6 +40,10 @@ function App() {
 
         <Route path="/notifications" element={
           <AdminLayout><Notifications /></AdminLayout>
+        } />
+
+        <Route path="/settings" element={
+          <AdminLayout><Settings /></AdminLayout>
         } />
 
         <Route path="/field" element={<FieldApp />} />
