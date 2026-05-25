@@ -4,110 +4,204 @@ import { supabase } from "../../../lib/supabase";
 
 export default function Settings() {
 
-  const [password, setPassword] = useState("");
+  /* =========================
+     STATES
+  ========================= */
 
-  const [memberInput, setMemberInput] = useState("");
-  const [vehicleInput, setVehicleInput] = useState("");
+  const [adminPassword, setAdminPassword] =
+    useState("");
 
-  const [members, setMembers] = useState([]);
-  const [vehicles, setVehicles] = useState([]);
+  const [loginPassword, setLoginPassword] =
+    useState("");
 
-  const [success, setSuccess] = useState("");
+  const [memberInput, setMemberInput] =
+    useState("");
+
+  const [vehicleInput, setVehicleInput] =
+    useState("");
+
+  const [teamInput, setTeamInput] =
+    useState("");
+
+  const [members, setMembers] =
+    useState([]);
+
+  const [vehicles, setVehicles] =
+    useState([]);
+
+  const [teams, setTeams] =
+    useState([]);
+
+  const [success, setSuccess] =
+    useState("");
+
+  /* =========================
+     LOAD DATA
+  ========================= */
 
   const loadData = async () => {
 
-    // PASSWORD
-    const { data: settingsData } = await supabase
-      .from("app_settings")
-      .select("*")
-      .limit(1);
+    // SETTINGS
+    const { data: settingsData } =
+      await supabase
+        .from("app_settings")
+        .select("*")
+        .limit(1);
 
-    if (settingsData && settingsData.length > 0) {
-      setPassword(settingsData[0].admin_password || "");
+    if (
+      settingsData &&
+      settingsData.length > 0
+    ) {
+
+      setAdminPassword(
+        settingsData[0]
+          .admin_password || ""
+      );
+
+      setLoginPassword(
+        settingsData[0]
+          .login_password || ""
+      );
     }
 
     // MEMBERS
-    const { data: memberData } = await supabase
-      .from("team_members")
-      .select("*")
-      .order("id", { ascending: true });
+    const { data: memberData } =
+      await supabase
+        .from("team_members")
+        .select("*")
+        .order("id", {
+          ascending: true
+        });
 
     if (memberData) {
       setMembers(memberData);
     }
 
     // VEHICLES
-    const { data: vehicleData } = await supabase
-      .from("vehicles")
-      .select("*")
-      .order("id", { ascending: true });
+    const { data: vehicleData } =
+      await supabase
+        .from("vehicles")
+        .select("*")
+        .order("id", {
+          ascending: true
+        });
 
     if (vehicleData) {
       setVehicles(vehicleData);
     }
+
+    // TEAMS
+    const { data: teamData } =
+      await supabase
+        .from("teams")
+        .select("*")
+        .order("id", {
+          ascending: true
+        });
+
+    if (teamData) {
+      setTeams(teamData);
+    }
   };
+
+  /* =========================
+     USE EFFECT
+  ========================= */
 
   useEffect(() => {
 
-    const fetchData = async () => {
-      await loadData();
-    };
+    const timer =
+      setTimeout(() => {
 
-    fetchData();
+        loadData();
+
+      }, 0);
+
+    return () =>
+      clearTimeout(timer);
 
   }, []);
 
-  // SUCCESS TOAST
+  /* =========================
+     SUCCESS TOAST
+  ========================= */
+
   const showSuccess = (msg) => {
 
     setSuccess(msg);
 
     setTimeout(() => {
+
       setSuccess("");
+
     }, 2500);
   };
 
-  // SAVE PASSWORD
-  const savePassword = async () => {
+  /* =========================
+     SAVE PASSWORDS
+  ========================= */
 
-    const { data } = await supabase
-      .from("app_settings")
-      .select("*")
-      .limit(1);
+  const savePasswords =
+    async () => {
 
-    if (data.length > 0) {
+      const { data } =
+        await supabase
+          .from("app_settings")
+          .select("*")
+          .limit(1);
 
-      await supabase
-        .from("app_settings")
-        .update({
-          admin_password: password
-        })
-        .eq("id", data[0].id);
+      if (
+        data &&
+        data.length > 0
+      ) {
 
-    } else {
+        await supabase
+          .from("app_settings")
+          .update({
+            admin_password:
+              adminPassword,
 
-      await supabase
-        .from("app_settings")
-        .insert([
-          {
-            admin_password: password
-          }
-        ]);
-    }
+            login_password:
+              loginPassword
+          })
+          .eq("id", data[0].id);
 
-    showSuccess("Password Updated");
-  };
+      } else {
 
-  // ADD MEMBER
+        await supabase
+          .from("app_settings")
+          .insert([
+            {
+              admin_password:
+                adminPassword,
+
+              login_password:
+                loginPassword
+            }
+          ]);
+      }
+
+      showSuccess(
+        "Passwords Updated"
+      );
+    };
+
+  /* =========================
+     ADD MEMBER
+  ========================= */
+
   const addMember = async () => {
 
-    if (!memberInput.trim()) return;
+    if (
+      !memberInput.trim()
+    ) return;
 
     await supabase
       .from("team_members")
       .insert([
         {
-          member_name: memberInput
+          member_name:
+            memberInput
         }
       ]);
 
@@ -115,119 +209,289 @@ export default function Settings() {
 
     await loadData();
 
-    showSuccess("Member Added");
+    showSuccess(
+      "Member Added"
+    );
   };
 
-  // DELETE MEMBER
-  const deleteMember = async (id, name) => {
+  /* =========================
+     DELETE MEMBER
+  ========================= */
+
+  const deleteMember =
+    async (id, name) => {
+
+      await supabase
+        .from("team_members")
+        .delete()
+        .eq("id", id);
+
+      await loadData();
+
+      showSuccess(
+        `${name} Removed`
+      );
+    };
+
+  /* =========================
+     ADD VEHICLE
+  ========================= */
+
+  const addVehicle =
+    async () => {
+
+      if (
+        !vehicleInput.trim()
+      ) return;
+
+      await supabase
+        .from("vehicles")
+        .insert([
+          {
+            vehicle_number:
+              vehicleInput
+          }
+        ]);
+
+      setVehicleInput("");
+
+      await loadData();
+
+      showSuccess(
+        "Vehicle Added"
+      );
+    };
+
+  /* =========================
+     DELETE VEHICLE
+  ========================= */
+
+  const deleteVehicle =
+    async (id, name) => {
+
+      await supabase
+        .from("vehicles")
+        .delete()
+        .eq("id", id);
+
+      await loadData();
+
+      showSuccess(
+        `${name} Removed`
+      );
+    };
+
+  /* =========================
+     ADD TEAM
+  ========================= */
+
+  const addTeam = async () => {
+
+    if (
+      !teamInput.trim()
+    ) return;
 
     await supabase
-      .from("team_members")
-      .delete()
-      .eq("id", id);
-
-    await loadData();
-
-    showSuccess(`${name} Removed`);
-  };
-
-  // ADD VEHICLE
-  const addVehicle = async () => {
-
-    if (!vehicleInput.trim()) return;
-
-    await supabase
-      .from("vehicles")
+      .from("teams")
       .insert([
         {
-          vehicle_number: vehicleInput
+          team_name:
+            teamInput
         }
       ]);
 
-    setVehicleInput("");
+    setTeamInput("");
 
     await loadData();
 
-    showSuccess("Vehicle Added");
+    showSuccess(
+      "Team Added"
+    );
   };
 
-  // DELETE VEHICLE
-  const deleteVehicle = async (id, name) => {
+  /* =========================
+     DELETE TEAM
+  ========================= */
 
-    await supabase
-      .from("vehicles")
-      .delete()
-      .eq("id", id);
+  const deleteTeam =
+    async (id, name) => {
 
-    await loadData();
+      await supabase
+        .from("teams")
+        .delete()
+        .eq("id", id);
 
-    showSuccess(`${name} Removed`);
-  };
+      await loadData();
+
+      showSuccess(
+        `${name} Removed`
+      );
+    };
+
+  /* =========================
+     JSX
+  ========================= */
 
   return (
+
     <div className="settings-page">
 
       {/* TOAST */}
       {success && (
+
         <div className="success-toast">
           {success}
         </div>
+
       )}
 
-      <h1>Admin Settings</h1>
+      <h1>
+        Admin Settings
+      </h1>
 
-      {/* PASSWORD */}
+      {/* PASSWORDS */}
       <div className="settings-submit-card">
 
-        <h2>Admin Password</h2>
+        <h2>
+          App Passwords
+        </h2>
 
         <input
           className="main-input"
           type="text"
-          placeholder="Enter admin password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Admin Password"
+          value={adminPassword}
+          onChange={(e) =>
+            setAdminPassword(
+              e.target.value
+            )
+          }
         />
 
-        <button onClick={savePassword}>
-          Save Password
+        <input
+          className="main-input"
+          type="text"
+          placeholder="Login Password"
+          value={loginPassword}
+          onChange={(e) =>
+            setLoginPassword(
+              e.target.value
+            )
+          }
+        />
+
+        <button
+          onClick={savePasswords}
+        >
+          Save Passwords
         </button>
+
+      </div>
+
+      {/* TEAMS */}
+      <div className="settings-submit-card">
+
+        <h2>
+          Teams
+        </h2>
+
+        <input
+          className="main-input"
+          type="text"
+          placeholder="Add Team"
+          value={teamInput}
+          onChange={(e) =>
+            setTeamInput(
+              e.target.value
+            )
+          }
+        />
+
+        <button
+          onClick={addTeam}
+        >
+          Add Team
+        </button>
+
+        <div className="list-wrap">
+
+          {teams.map((t) => (
+
+            <div
+              className="item-chip"
+              key={t.id}
+            >
+
+              {t.team_name}
+
+              <span
+                onClick={() =>
+                  deleteTeam(
+                    t.id,
+                    t.team_name
+                  )
+                }
+              >
+                ×
+              </span>
+
+            </div>
+
+          ))}
+
+        </div>
 
       </div>
 
       {/* MEMBERS */}
       <div className="settings-submit-card">
 
-        <h2>Team Members</h2>
+        <h2>
+          Team Members
+        </h2>
 
-        
+        <input
+          className="main-input"
+          type="text"
+          placeholder="Add member"
+          value={memberInput}
+          onChange={(e) =>
+            setMemberInput(
+              e.target.value
+            )
+          }
+        />
 
-          <input
-            className="main-input"
-            type="text"
-            placeholder="Add member"
-            value={memberInput}
-            onChange={(e) => setMemberInput(e.target.value)}
-          />
-
-          <button onClick={addMember}>
-            Add
-          </button>
-
-      
+        <button
+          onClick={addMember}
+        >
+          Add Member
+        </button>
 
         <div className="list-wrap">
 
           {members.map((m) => (
-            <div className="item-chip" key={m.id}>
+
+            <div
+              className="item-chip"
+              key={m.id}
+            >
 
               {m.member_name}
 
-              <span onClick={() => deleteMember(m.id, m.member_name)}>
+              <span
+                onClick={() =>
+                  deleteMember(
+                    m.id,
+                    m.member_name
+                  )
+                }
+              >
                 ×
               </span>
 
             </div>
+
           ))}
 
         </div>
@@ -237,36 +501,52 @@ export default function Settings() {
       {/* VEHICLES */}
       <div className="settings-submit-card">
 
-        <h2>Vehicle Numbers</h2>
+        <h2>
+          Vehicle Numbers
+        </h2>
 
-        
+        <input
+          className="main-input"
+          type="text"
+          placeholder="Add vehicle"
+          value={vehicleInput}
+          onChange={(e) =>
+            setVehicleInput(
+              e.target.value
+            )
+          }
+        />
 
-          <input
-            className="main-input"
-            type="text"
-            placeholder="Add vehicle"
-            value={vehicleInput}
-            onChange={(e) => setVehicleInput(e.target.value)}
-          />
-
-          <button onClick={addVehicle}>
-            Add
-          </button>
-
-        
+        <button
+          onClick={addVehicle}
+        >
+          Add Vehicle
+        </button>
 
         <div className="list-wrap">
 
           {vehicles.map((v) => (
-            <div className="item-chip" key={v.id}>
+
+            <div
+              className="item-chip"
+              key={v.id}
+            >
 
               {v.vehicle_number}
 
-              <span onClick={() => deleteVehicle(v.id, v.vehicle_number)}>
+              <span
+                onClick={() =>
+                  deleteVehicle(
+                    v.id,
+                    v.vehicle_number
+                  )
+                }
+              >
                 ×
               </span>
 
             </div>
+
           ))}
 
         </div>

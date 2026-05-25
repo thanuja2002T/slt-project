@@ -1,13 +1,14 @@
 .settings-page {
-  padding: 40px;
+  padding: 28px;
   min-height: 100vh;
   background: #020617;
   color: white;
 }
 
 .settings-page h1 {
-  font-size: 64px;
-  margin-bottom: 30px;
+  font-size: 52px;
+  margin-bottom: 24px;
+  font-weight: 700;
 }
 
 /* CARD */
@@ -15,37 +16,41 @@
 .settings-submit-card {
   background: #07142c;
   border: 1px solid #16213d;
-  border-radius: 30px;
-  padding: 40px;
-  margin-bottom: 35px;
+  border-radius: 24px;
+  padding: 28px;
+  margin-bottom: 24px;
 }
 
 .settings-card h2,
 .settings-submit-card h2 {
-  font-size: 24px;
-  margin-bottom: 25px;
-}
-
-/* INPUT ROW */
-.row-input {
-  display: flex;
-  gap: 18px;
-  align-items: center;
+  font-size: 22px;
+  margin-bottom: 18px;
+  font-weight: 700;
 }
 
 /* INPUT */
 .main-input {
-  flex: 1;
   width: 100%;
-  height: 72px;
-  border-radius: 22px;
+  height: 62px;
+
+  border-radius: 18px;
   border: 1px solid #1f335c;
+
   background: #020817;
   color: white;
-  font-size: 24px;
-  padding: 0 25px;
+
+  font-size: 18px;
+
+  padding: 0 20px;
+
   outline: none;
   box-sizing: border-box;
+
+  margin-bottom: 14px;
+}
+
+.main-input::placeholder {
+  color: #64748b;
 }
 
 .main-input:focus {
@@ -55,152 +60,139 @@
 /* BUTTON */
 .settings-card button,
 .settings-submit-card button {
-  height: 72px;
-  padding: 0 35px;
-  border: none;
-  border-radius: 22px;
-  background: linear-gradient(135deg, #2563eb, #60a5fa);
-  color: white;
-  font-size: 24px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: 0.2s;
-}
 
-.settings-submit-card button {
-  margin-top: 20px;
+  width: 100%;
+  height: 60px;
+
+  border: none;
+  border-radius: 18px;
+
+  background: linear-gradient(
+    135deg,
+    #2563eb,
+    #60a5fa
+  );
+
+  color: white;
+
+  font-size: 20px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  margin-top: 6px;
+
+  transition: 0.2s;
 }
 
 .settings-card button:hover,
 .settings-submit-card button:hover {
-  transform: scale(1.02);
+  transform: scale(1.01);
 }
 
 /* LIST */
 .list-wrap {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
-  margin-top: 30px;
+  gap: 12px;
+  margin-top: 20px;
 }
 
 /* CHIP */
 .item-chip {
   display: flex;
   align-items: center;
-  gap: 14px;
-  background: linear-gradient(135deg, #2563eb, #3b82f6);
-  padding: 14px 22px;
+  gap: 10px;
+
+  background: linear-gradient(
+    135deg,
+    #2563eb,
+    #3b82f6
+  );
+
+  padding: 10px 18px;
+
   border-radius: 999px;
-  font-size: 20px;
+
+  font-size: 16px;
   font-weight: 600;
 }
 
 .item-chip span {
   cursor: pointer;
-  font-size: 28px;
-  line-height: 1;
+  font-size: 20px;
 }
 
 /* TOAST */
 .success-toast {
   position: fixed;
-  top: 30px;
-  right: 30px;
-  background: linear-gradient(135deg, #2563eb, #60a5fa);
+
+  top: 20px;
+  right: 20px;
+
+  background: linear-gradient(
+    135deg,
+    #2563eb,
+    #60a5fa
+  );
+
   color: white;
-  padding: 18px 28px;
-  border-radius: 18px;
-  font-size: 18px;
+
+  padding: 14px 22px;
+
+  border-radius: 14px;
+
+  font-size: 15px;
   font-weight: 600;
+
   z-index: 9999;
-  box-shadow: 0 10px 40px rgba(37, 99, 235, 0.4);
-
-  animation: slideToast 0.3s ease;
-}
-
-@keyframes slideToast {
-  from {
-    transform: translateX(120px);
-    opacity: 0;
-  }
-
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
 }
 
 /* MOBILE */
 @media (max-width: 768px) {
 
   .settings-page {
-    padding: 20px;
+    padding: 16px;
   }
 
   .settings-page h1 {
-    font-size: 44px;
-    margin-bottom: 20px;
+    font-size: 34px;
+    margin-bottom: 16px;
   }
 
   .settings-card,
   .settings-submit-card {
-    padding: 25px;
-    border-radius: 24px;
-    margin-bottom: 25px;
+    padding: 20px;
+    border-radius: 20px;
+    margin-bottom: 18px;
   }
 
   .settings-card h2,
   .settings-submit-card h2 {
-    font-size: 24px;
-    margin-bottom: 18px;
+    font-size: 20px;
+    margin-bottom: 14px;
   }
 
-  /* MOBILE INPUT ROW */
-  .row-input {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 14px;
-    width: 100%;
+  .main-input {
+    height: 54px;
+    font-size: 16px;
+    padding: 0 16px;
+    border-radius: 16px;
   }
 
-  /* MOBILE INPUT */
-  .main-input,
-  .settings-submit-card .main-input {
-    width: 100%;
-    min-width: 100%;
-    height: 60px;
-    font-size: 18px;
-    padding: 0 18px;
-    border-radius: 18px;
-    box-sizing: border-box;
-    display: block;
-  }
-
-  /* MOBILE BUTTON */
   .settings-card button,
   .settings-submit-card button {
-    width: 100%;
-    height: 60px;
-    font-size: 18px;
-    border-radius: 18px;
-    margin-top: 10px;
+    height: 54px;
+    font-size: 17px;
+    border-radius: 16px;
   }
 
   .item-chip {
-    font-size: 16px;
-    padding: 12px 18px;
+    font-size: 14px;
+    padding: 8px 14px;
   }
 
   .item-chip span {
-    font-size: 22px;
-  }
-
-  .success-toast {
-    right: 15px;
-    left: 15px;
-    top: 15px;
-    text-align: center;
-    font-size: 16px;
+    font-size: 18px;
   }
 }

@@ -30,41 +30,50 @@ export default function FieldApp() {
 
   useEffect(() => {
 
-    const today =
-      new Date()
-        .toISOString()
-        .split("T")[0];
+    const loadNotifications = () => {
 
-    const savedDate =
-      localStorage.getItem(
-        "notificationDate"
-      );
+      const today =
+        new Date()
+          .toISOString()
+          .split("T")[0];
 
-    /* CLEAR NEXT DAY */
-    if (savedDate !== today) {
+      const savedDate =
+        localStorage.getItem(
+          "notificationDate"
+        );
 
-      localStorage.removeItem(
-        "fieldNotifications"
-      );
+      if (savedDate !== today) {
 
-      localStorage.setItem(
-        "notificationDate",
-        today
-      );
+        localStorage.removeItem(
+          "fieldNotifications"
+        );
 
-      setNotifications([]);
+        localStorage.setItem(
+          "notificationDate",
+          today
+        );
 
-      return;
-    }
+        return [];
+      }
 
-    const saved =
-      JSON.parse(
+      return JSON.parse(
         localStorage.getItem(
           "fieldNotifications"
         )
       ) || [];
+    };
 
-    setNotifications(saved);
+    const timer = setTimeout(() => {
+
+      const data =
+        loadNotifications();
+
+      setNotifications(data);
+
+    }, 0);
+
+    return () =>
+      clearTimeout(timer);
 
   }, []);
 
@@ -90,22 +99,19 @@ export default function FieldApp() {
   const [finished, setFinished] =
     useState(false);
 
-  const [showToast, setShowToast] =
-  useState(false);
-
   const [entryPopup, setEntryPopup] =
-  useState(false);
+    useState(false);
 
   const [popupMessage, setPopupMessage] =
-  useState("");
+    useState("");
 
   const [blinkCard, setBlinkCard] =
     useState(false);
 
-  const [finishBlink, setFinishBlink] =
-    useState(false);
+  const [workId, setWorkId] =
+    useState(null);
 
-  const [faultType, setFaultType] =
+  const [faultType] =
     useState("FTTH");
 
   /* =========================
@@ -247,7 +253,7 @@ export default function FieldApp() {
     const vehicleOutTime =
       new Date().toISOString();
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("field_work")
       .insert([
         {
@@ -255,9 +261,12 @@ export default function FieldApp() {
           members: selectedMembers,
           vehicle_out_time:
             vehicleOutTime,
-          status: "Vehicle Out"
+          status: "Vehicle Out",
+          total_faults: 0
         }
-      ]);
+      ])
+      .select()
+      .single();
 
     if (error) {
 
@@ -268,11 +277,13 @@ export default function FieldApp() {
       return;
     }
 
-    showEntryPopup(
-  "Vehicle Out Entry Added "
-);
+    setWorkId(data.id);
 
-setStarted(true);
+    showEntryPopup(
+      "Vehicle Out Entry Added"
+    );
+
+    setStarted(true);
   };
 
   /* =========================
@@ -284,19 +295,28 @@ setStarted(true);
     const completedTime =
       new Date().toISOString();
 
+    const newFaultCount =
+      faultCount;
+
     const { error } = await supabase
       .from("field_work")
-      .insert([
-        {
-          vehicle: vehicleInput,
-          members: selectedMembers,
-          fault_number: faultCount,
-          fault_type: faultType,
-          completed_time:
-            completedTime,
-          status: "Fault Completed"
-        }
-      ]);
+      .update({
+        fault_number:
+          newFaultCount,
+
+        fault_type:
+          faultType,
+
+        completed_time:
+          completedTime,
+
+        total_faults:
+          newFaultCount,
+
+        status:
+          "Fault Completed"
+      })
+      .eq("id", workId);
 
     if (error) {
 
@@ -307,24 +327,21 @@ setStarted(true);
       return;
     }
 
-    showEntryPopup(`Fault ${faultCount} Completed`);
+    showEntryPopup(
+      `Fault ${newFaultCount} Completed`
+    );
 
     setFaultCount(
       faultCount + 1
     );
 
-    setShowToast(true);
-
     setBlinkCard(true);
 
     setTimeout(() => {
-      setShowToast(false);
-    }, 2000);
 
-    setTimeout(() => {
       setBlinkCard(false);
-    }, 1000);
 
+    }, 1000);
   };
 
   /* =========================
@@ -341,18 +358,20 @@ setStarted(true);
 
     const { error } = await supabase
       .from("field_work")
-      .insert([
-        {
-          vehicle: vehicleInput,
-          members: selectedMembers,
-          finish_time: finishTime,
-          vehicle_in_time:
-            finishTime,
-          total_faults:
-            completedFaults,
-          status: "Vehicle In"
-        }
-      ]);
+      .update({
+        finish_time:
+          finishTime,
+
+        vehicle_in_time:
+          finishTime,
+
+        total_faults:
+          completedFaults,
+
+        status:
+          "Vehicle In"
+      })
+      .eq("id", workId);
 
     if (error) {
 
@@ -364,7 +383,7 @@ setStarted(true);
     }
 
     showEntryPopup(
-     "Vehicle In Saved Successfully"
+      "Vehicle In Saved Successfully"
     );
 
     setTimeout(() => {
@@ -379,50 +398,50 @@ setStarted(true);
 
   const showEntryPopup = (message) => {
 
-  setPopupMessage(message);
+    setPopupMessage(message);
 
-  setEntryPopup(true);
+    setEntryPopup(true);
 
-  setTimeout(() => {
+    setTimeout(() => {
 
-    setEntryPopup(false);
+      setEntryPopup(false);
 
-  }, 2500);
+    }, 2500);
 
-};  
+  };
 
   /* =========================
      JSX
   ========================= */
 
   return (
+
     <div className="field-layout">
 
-      {/* TOAST */}
-{/* ENTRY POPUP */}
-{entryPopup && (
+      {/* ENTRY POPUP */}
+      {entryPopup && (
 
-  <div className="entry-popup">
+        <div className="entry-popup">
 
-    <div className="popup-icon">
-      ✓
-    </div>
+          <div className="popup-icon">
+            ✓
+          </div>
 
-    <div>
+          <div>
 
-      <h4>
-        Entry Added
-      </h4>
+            <h4>
+              Entry Added
+            </h4>
 
-      <p>
-        {popupMessage}
-      </p>
+            <p>
+              {popupMessage}
+            </p>
 
-    </div>
+          </div>
 
-  </div>
+        </div>
 
-)}
+      )}
 
       {/* BELL */}
       <div className="notification-wrapper">
@@ -438,9 +457,11 @@ setStarted(true);
           <IoNotifications />
 
           {notifications.length > 0 && (
+
             <span className="bell-count">
               {notifications.length}
             </span>
+
           )}
 
         </button>
@@ -502,7 +523,7 @@ setStarted(true);
 
       )}
 
-      {/* BACK BUTTON */}
+      {/* BACK */}
       <button
         className="back-btn"
         onClick={() =>
@@ -515,7 +536,9 @@ setStarted(true);
       {/* TOP */}
       <div className="top-section">
 
-        <h1>Field App</h1>
+        <h1>
+          Field App
+        </h1>
 
         <div className="form-box">
 
@@ -637,12 +660,14 @@ setStarted(true);
           </div>
 
           {!started && (
+
             <button
               className="submit-btn"
               onClick={handleSubmit}
             >
               Vehicle Out →
             </button>
+
           )}
 
         </div>
@@ -683,13 +708,7 @@ setStarted(true);
 
             </div>
 
-            <div
-              className={`thank-box ${
-                finishBlink
-                  ? "finish-blink"
-                  : ""
-              }`}
-            >
+            <div className="thank-box">
 
               <div className="celebrate-icon">
                 🚀
@@ -697,7 +716,7 @@ setStarted(true);
 
               <h2 className="finish-title">
 
-                You have completed{" "}
+                You completed{" "}
                 {completedFaults} faults today
 
               </h2>
@@ -707,10 +726,6 @@ setStarted(true);
                 Vehicle In Successfully ✅
 
               </p>
-
-              <span className="finish-wave">
-                🎉 Have a Nice Day 🙌
-              </span>
 
             </div>
           </>
@@ -748,7 +763,6 @@ setStarted(true);
                 Fault {faultCount}
               </h2>
 
-              
               <div className="btn-group">
 
                 <button
@@ -762,7 +776,7 @@ setStarted(true);
                   className="finish-btn"
                   onClick={handleFinish}
                 >
-                  Finish for Today and Vehicle in ✔
+                  Finish for Today and Vehicle In ✔
                 </button>
 
               </div>
