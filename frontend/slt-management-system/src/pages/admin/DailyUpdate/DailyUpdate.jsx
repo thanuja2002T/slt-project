@@ -1,69 +1,25 @@
 import { useState, useEffect } from "react";
 import "./DailyUpdate.css";
-
-/* =========================
-   TEAMS
-========================= */
-const allTeams = Array.from(
-  { length: 18 },
-  (_, i) => `JA${i + 1}`
-);
-
-/* =========================
-   MEMBERS
-========================= */
-const membersList = [
-  "Tharsan",
-  "M.Jana",
-  "Johnson",
-  "S.Ramesh",
-  "Puvinath",
-  "Kokilaraman",
-  "Anpalagan",
-  "Thiva",
-  "Muruka",
-  "Sathees",
-  "Nanthan",
-  "M.Suresh",
-  "Sivaratnam",
-  "Vikke",
-  "T.Sansu",
-  "Anutharsan",
-  "Rajasimman",
-  "S.Vikna",
-  "Paventhan",
-  "Srikanth",
-  "Jeyaraman",
-  "Ajanthan",
-  "Sasi",
-  "Mathavan",
-  "Rathees",
-  "Naren",
-  "T.Suresh",
-  "Niranjan",
-  "Kavi",
-  "Pakeer"
-];
+import { supabase } from "../../../lib/supabase";
 
 /* =========================
    MULTI SELECT
 ========================= */
+
 function MultiSelect({
   team,
   defaultValue = [],
-  onChange
+  onChange,
+  membersList
 }) {
 
   const [input, setInput] =
     useState("");
 
-  const [selected, setSelected] =
-    useState(defaultValue);
+  const selected =
+    defaultValue || [];
 
-  useEffect(() => {
-    setSelected(defaultValue);
-  }, [defaultValue]);
-
+  /* FILTER */
   const filtered =
     membersList.filter(
       m =>
@@ -75,6 +31,7 @@ function MultiSelect({
         !selected.includes(m)
     );
 
+  /* ADD */
   const addMember = (name) => {
 
     const updated = [
@@ -82,13 +39,12 @@ function MultiSelect({
       name
     ];
 
-    setSelected(updated);
-
     onChange(team, updated);
 
     setInput("");
   };
 
+  /* REMOVE */
   const removeMember = (name) => {
 
     const updated =
@@ -96,14 +52,14 @@ function MultiSelect({
         m => m !== name
       );
 
-    setSelected(updated);
-
     onChange(team, updated);
   };
 
   return (
+
     <div className="multi-select">
 
+      {/* TAGS */}
       <div className="tags">
 
         {selected.map(m => (
@@ -129,6 +85,7 @@ function MultiSelect({
 
       </div>
 
+      {/* INPUT */}
       <input
         placeholder="Type member..."
         value={input}
@@ -139,6 +96,7 @@ function MultiSelect({
         }
       />
 
+      {/* DROPDOWN */}
       {input && (
 
         <div className="dropdown">
@@ -177,43 +135,90 @@ function MultiSelect({
 /* =========================
    MAIN COMPONENT
 ========================= */
+
 export default function DailyUpdate() {
 
   const [step, setStep] =
     useState(1);
 
-  /* AUTO SAVE TEAM MEMBERS */
+  /* DATABASE */
+  const [allTeams, setAllTeams] =
+    useState([]);
+
+  const [membersList, setMembersList] =
+    useState([]);
+
+  /* TEAM MEMBERS */
   const [teamMembers, setTeamMembers] =
-    useState(() => {
-
-      const saved =
-        localStorage.getItem(
-          "teamMembers"
-        );
-
-      return saved
-        ? JSON.parse(saved)
-        : {};
-    });
+    useState({});
 
   /* TEAM DATA */
   const [teamData, setTeamData] =
     useState({});
 
-  /* AUTO SAVE */
-  useEffect(() => {
+  /* =========================
+   LOAD TEAMS
+========================= */
 
-    localStorage.setItem(
-      "teamMembers",
+const loadTeams = async () => {
 
-      JSON.stringify(
-        teamMembers
+  const { data, error } =
+    await supabase
+      .from("teams")
+      .select("*")
+      .order("team_name");
+
+  if (!error && data) {
+
+    setAllTeams(
+      data.map(
+        (t) => t.team_name
       )
     );
+  }
+};
 
-  }, [teamMembers]);
+/* =========================
+   LOAD MEMBERS
+========================= */
 
-  /* NEXT PAGE */
+const loadMembers = async () => {
+
+  const { data, error } =
+    await supabase
+      .from("members")
+      .select("*")
+      .order("member_name");
+
+  if (!error && data) {
+
+    setMembersList(
+      data.map(
+        (m) => m.member_name
+      )
+    );
+  }
+};
+
+/* =========================
+   LOAD DATABASE
+========================= */
+
+useEffect(() => {
+
+  const fetchData = async () => {
+
+    await loadTeams();
+
+    await loadMembers();
+
+  };
+
+  fetchData();
+
+}, []);
+
+  /* NEXT */
   const goNext = () => {
 
     const filtered = {};
@@ -272,149 +277,78 @@ export default function DailyUpdate() {
     }));
   };
 
-  /* GENERATE MESSAGE */
-  const generateMessage = () => {
 
-    return Object.keys(teamData)
-      .map(team => {
-
-        const t =
-          teamData[team];
-
-        let msg =
-          `${team} ` +
-          `${t.members.join(", ")}`;
-
-        if (t.ftthA)
-          msg +=
-            ` FTTH-${t.ftthA}/${t.ftthB}`;
-
-        if (t.pstnA)
-          msg +=
-            ` PSTN-${t.pstnA}/${t.pstnB}`;
-
-        if (t.dataA)
-          msg +=
-            ` DATA-${t.dataA}/${t.dataB}`;
-
-        return msg;
-
-      })
-      .join("\n");
-  };
 
   /* SEND */
-  const submit = async () => {
+const submit = async () => {
 
-    try {
+  try {
 
-      const message =
-        generateMessage();
+    const notifications = Object.keys(teamData)
+      .map(team => {
 
-      console.log(message);
+        const t = teamData[team];
 
-      /* TODAY */
-      const today =
-        new Date()
-          .toISOString()
-          .split("T")[0];
+        return {
 
-      /* TIME */
-      const time =
-        new Date()
-          .toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit"
-          });
+          team: team,
 
-      /* OLD */
-      const oldNotifications =
-        JSON.parse(
-          localStorage.getItem(
-            "fieldNotifications"
-          )
-        ) || [];
+          message: `
 
-      /* DATE CHECK */
-      const savedDate =
-        localStorage.getItem(
-          "notificationDate"
-        );
+${team}
 
-      let updatedNotifications =
-        oldNotifications;
+Members:
+${t.members.join(", ")}
 
-      /* NEW DAY */
-      if (savedDate !== today) {
+FTTH Assigned: ${t.ftthA || 0}
+FTTH Attended: ${t.ftthB || 0}
 
-        updatedNotifications = [];
+PSTN Assigned: ${t.pstnA || 0}
+PSTN Attended: ${t.pstnB || 0}
 
-        localStorage.setItem(
-          "notificationDate",
-          today
-        );
-      }
+DATA Assigned: ${t.dataA || 0}
+DATA Attended: ${t.dataB || 0}
 
-      /* NEW MESSAGE */
-      const newNotification = {
+`
+        };
 
-        id: Date.now(),
+      });
 
-        time,
+    const { error } =
+      await supabase
+        .from("notifications")
+        .insert(notifications);
 
-        message
+    if (error) {
 
-      };
+      console.log(error);
 
-      updatedNotifications.unshift(
-        newNotification
-      );
+      alert("Database Error");
 
-      /* SAVE */
-      localStorage.setItem(
-        "fieldNotifications",
-
-        JSON.stringify(
-          updatedNotifications
-        )
-      );
-
-      alert(
-        "Sent to Field ✅"
-      );
-
-      /* CLEAR PAGE 2 */
-      setTeamData({});
-
-      /* RETURN PAGE 1 */
-      setStep(1);
-
-    } catch (err) {
-
-      console.log(err);
-
-      alert(
-        "Something went wrong"
-      );
-
+      return;
     }
 
-  };
+    alert("Sent to Field ✅");
+
+    /* CLEAR */
+    setTeamMembers({});
+
+    setTeamData({});
+
+    setStep(1);
+
+  } catch (err) {
+
+    console.log(err);
+
+    alert("Something went wrong");
+
+  }
+
+};
 
   /* END DAY */
   const endDay = () => {
-
-    localStorage.removeItem(
-      "teamMembers"
-    );
-
-    localStorage.removeItem(
-      "fieldNotifications"
-    );
-
-    localStorage.removeItem(
-      "notificationDate"
-    );
 
     setTeamMembers({});
 
@@ -426,9 +360,12 @@ export default function DailyUpdate() {
   };
 
   return (
+
     <div className="daily-page">
 
-      <h1>Daily Update</h1>
+      <h1>
+        Daily Update
+      </h1>
 
       {/* STEP 1 */}
       {step === 1 && (
@@ -451,6 +388,7 @@ export default function DailyUpdate() {
 
               <MultiSelect
                 team={team}
+                membersList={membersList}
                 defaultValue={
                   teamMembers[team] || []
                 }
@@ -650,185 +588,167 @@ export default function DailyUpdate() {
               );
             })}
 
+          {/* SEND */}
           <button
             className="send"
             onClick={submit}
           >
             Send to Field
           </button>
-{/* TABLE */}
-<div className="manager-section">
 
-  <div className="card">
+          {/* TABLE */}
+          <div className="daily-table-wrap">
 
-    <table>
+            <table className="daily-table">
 
-      <thead>
+              <thead>
 
-        <tr>
+                <tr>
 
-          <th>Team</th>
+                  <th>TEAM</th>
 
-          <th>Members</th>
+                  <th>MEMBERS</th>
 
-          <th>FTTH</th>
+                  <th>FTTH</th>
 
-          <th>PSTN</th>
+                  <th>PSTN</th>
 
-          <th>DATA</th>
+                  <th>DATA</th>
 
-          <th>Completion</th>
+                  <th>COMPLETION</th>
 
-          <th>Status</th>
+                  <th>STATUS</th>
 
-        </tr>
+                </tr>
 
-      </thead>
+              </thead>
 
-      <tbody>
+              <tbody>
 
-        {Object.keys(teamData)
-          .map((team, i) => {
+                {Object.keys(teamData)
+                  .map(team => {
 
-            const t =
-              teamData[team];
+                    const t =
+                      teamData[team];
 
-            const assigned =
+                    const ftthA =
+                      Number(t.ftthA || 0);
 
-              parseInt(
-                t.ftthA || 0
-              ) +
+                    const ftthB =
+                      Number(t.ftthB || 0);
 
-              parseInt(
-                t.pstnA || 0
-              ) +
+                    const pstnA =
+                      Number(t.pstnA || 0);
 
-              parseInt(
-                t.dataA || 0
-              );
+                    const pstnB =
+                      Number(t.pstnB || 0);
 
-            const attended =
+                    const dataA =
+                      Number(t.dataA || 0);
 
-              parseInt(
-                t.ftthB || 0
-              ) +
+                    const dataB =
+                      Number(t.dataB || 0);
 
-              parseInt(
-                t.pstnB || 0
-              ) +
+                    const totalAssigned =
+                      ftthA +
+                      pstnA +
+                      dataA;
 
-              parseInt(
-                t.dataB || 0
-              );
+                    const totalDone =
+                      ftthB +
+                      pstnB +
+                      dataB;
 
-            const percent =
+                    const percent =
+                      totalAssigned > 0
+                        ? Math.round(
+                            (
+                              totalDone /
+                              totalAssigned
+                            ) * 100
+                          )
+                        : 0;
 
-              assigned > 0
+                    return (
 
-                ? Math.round(
-                    (
-                      attended /
-                      assigned
-                    ) * 100
-                  )
+                      <tr key={team}>
 
-                : 0;
+                        <td>
+                          {team}
+                        </td>
 
-            let status =
-              "Done";
+                        <td>
+                          {t.members.join(", ")}
+                        </td>
 
-            if (
-              percent < 100 &&
-              percent >= 60
-            ) {
+                        <td>
+                          {ftthB}/{ftthA}
+                        </td>
 
-              status =
-                "Active";
-            }
+                        <td>
+                          {pstnB}/{pstnA}
+                        </td>
 
-            if (
-              percent < 60
-            ) {
+                        <td>
+                          {dataB}/{dataA}
+                        </td>
 
-              status =
-                "Behind";
-            }
+                        <td>
 
-            return (
+                          <div className="progress-wrap">
 
-              <tr key={i}>
+                            <div className="progress-bar">
 
-                <td>
-                  {team}
-                </td>
+                              <div
+                                className="progress-fill"
+                                style={{
+                                  width: `${percent}%`
+                                }}
+                              />
 
-                <td>
-                  {t.members.join(", ")}
-                </td>
+                            </div>
 
-                <td>
-                  {t.ftthA || 0}
-                  /
-                  {t.ftthB || 0}
-                </td>
+                            <span>
+                              {percent}%
+                            </span>
 
-                <td>
-                  {t.pstnA || 0}
-                  /
-                  {t.pstnB || 0}
-                </td>
+                          </div>
 
-                <td>
-                  {t.dataA || 0}
-                  /
-                  {t.dataB || 0}
-                </td>
+                        </td>
 
-                <td>
+                        <td>
 
-                  <div className="progress">
+                          <span
+                            className={
+                              percent >= 70
+                                ? "good"
+                                : "bad"
+                            }
+                          >
 
-                    <div
-                      style={{
-                        width:
-                          `${percent}%`
-                      }}
-                    ></div>
+                            {percent >= 70
+                              ? "Good"
+                              : "Behind"}
 
-                  </div>
+                          </span>
 
-                  <span>
-                    {percent}%
-                  </span>
+                        </td>
 
-                </td>
+                      </tr>
 
-                <td>
+                    );
 
-                  <span
-                    className={`status ${status.toLowerCase()}`}
-                  >
-                    {status}
-                  </span>
+                  })}
 
-                </td>
+              </tbody>
 
-              </tr>
+            </table>
 
-            );
-          })}
+          </div>
 
-      </tbody>
-
-    </table>
-
-  </div>
-
-</div>
         </>
       )}
 
     </div>
   );
 }
-

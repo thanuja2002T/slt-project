@@ -67,7 +67,7 @@ export default function Settings() {
     // MEMBERS
     const { data: memberData } =
       await supabase
-        .from("team_members")
+        .from("members")
         .select("*")
         .order("id", {
           ascending: true
@@ -197,7 +197,7 @@ export default function Settings() {
     ) return;
 
     await supabase
-      .from("team_members")
+      .from("members")
       .insert([
         {
           member_name:
@@ -222,7 +222,7 @@ export default function Settings() {
     async (id, name) => {
 
       await supabase
-        .from("team_members")
+        .from("members")
         .delete()
         .eq("id", id);
 
@@ -349,44 +349,54 @@ export default function Settings() {
         Admin Settings
       </h1>
 
-      {/* PASSWORDS */}
-      <div className="settings-submit-card">
+{/* PASSWORDS */}
+<div className="settings-submit-card">
 
-        <h2>
-          App Passwords
-        </h2>
+  <h2>
+    App Passwords
+  </h2>
 
-        <input
-          className="main-input"
-          type="text"
-          placeholder="Admin Password"
-          value={adminPassword}
-          onChange={(e) =>
-            setAdminPassword(
-              e.target.value
-            )
-          }
-        />
+  {/* ADMIN PASSWORD */}
+  <label className="input-label">
+    Admin Site Password
+  </label>
 
-        <input
-          className="main-input"
-          type="text"
-          placeholder="Login Password"
-          value={loginPassword}
-          onChange={(e) =>
-            setLoginPassword(
-              e.target.value
-            )
-          }
-        />
+  <input
+    className="main-input"
+    type="text"
+    placeholder="Enter admin password"
+    value={adminPassword}
+    onChange={(e) =>
+      setAdminPassword(
+        e.target.value
+      )
+    }
+  />
 
-        <button
-          onClick={savePasswords}
-        >
-          Save Passwords
-        </button>
+  {/* LOGIN PASSWORD */}
+  <label className="input-label second-label">
+    Login Password
+  </label>
 
-      </div>
+  <input
+    className="main-input"
+    type="text"
+    placeholder="Enter login password"
+    value={loginPassword}
+    onChange={(e) =>
+      setLoginPassword(
+        e.target.value
+      )
+    }
+  />
+
+  <button
+    onClick={savePasswords}
+  >
+    Save Passwords
+  </button>
+
+</div>
 
       {/* TEAMS */}
       <div className="settings-submit-card">

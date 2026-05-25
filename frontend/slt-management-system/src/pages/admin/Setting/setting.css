@@ -196,3 +196,16 @@
     font-size: 18px;
   }
 }
+
+.input-label {
+  display: block;
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  margin-top: 10px;
+  color: white;
+}
+
+.second-label {
+  margin-top: 22px;
+}

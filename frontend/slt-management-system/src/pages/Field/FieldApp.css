@@ -974,3 +974,253 @@
   }
 
 }
+
+
+/* =========================
+   NOTIFICATION WRAPPER
+========================= */
+
+.notification-wrapper {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 999;
+}
+
+/* =========================
+   BELL BUTTON
+========================= */
+
+.bell-btn {
+  width: 68px;
+  height: 68px;
+  border: none;
+  border-radius: 22px;
+  background: rgba(20, 35, 70, 0.9);
+  backdrop-filter: blur(10px);
+  color: white;
+  font-size: 28px;
+  cursor: pointer;
+  position: relative;
+  transition: 0.25s;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+}
+
+.bell-btn:hover {
+  transform: scale(1.05);
+}
+
+/* =========================
+   COUNT
+========================= */
+
+.bell-count {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #ff2d55;
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* =========================
+   POPUP
+========================= */
+
+.notification-popup {
+  position: absolute;
+  top: 80px;
+  right: 0;
+  width: 320px;
+  max-height: 420px;
+  overflow-y: auto;
+
+  background: rgba(6, 18, 45, 0.96);
+  backdrop-filter: blur(18px);
+
+  border: 1px solid rgba(59,130,246,0.25);
+
+  border-radius: 26px;
+
+  padding: 20px;
+
+  box-shadow:
+    0 20px 60px rgba(0,0,0,0.45);
+
+  animation: popupFade 0.25s ease;
+}
+
+/* =========================
+   HEADER
+========================= */
+
+.notification-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.notification-header h3 {
+  color: white;
+  font-size: 26px;
+  font-weight: 700;
+}
+
+/* =========================
+   CLOSE BTN
+========================= */
+
+.close-btn {
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.08);
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.close-btn:hover {
+  background: rgba(255,255,255,0.15);
+}
+
+/* =========================
+   LIST
+========================= */
+
+.notification-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* =========================
+   CARD
+========================= */
+
+.notification-card {
+  background: linear-gradient(
+    135deg,
+    rgba(30,64,175,0.35),
+    rgba(15,23,42,0.9)
+  );
+
+  border: 1px solid rgba(59,130,246,0.2);
+
+  border-radius: 20px;
+
+  padding: 16px;
+}
+
+/* =========================
+   TEAM
+========================= */
+
+.notify-team {
+  font-size: 18px;
+  font-weight: 700;
+  color: #60a5fa;
+  margin-bottom: 10px;
+}
+
+/* =========================
+   MESSAGE
+========================= */
+
+.notify-message {
+  color: rgba(255,255,255,0.92);
+  font-size: 15px;
+  line-height: 1.6;
+  white-space: pre-line;
+}
+
+/* =========================
+   EMPTY
+========================= */
+
+.empty-notification {
+  text-align: center;
+  color: rgba(255,255,255,0.7);
+  padding: 30px 10px;
+  font-size: 15px;
+}
+
+/* =========================
+   SCROLLBAR
+========================= */
+
+.notification-popup::-webkit-scrollbar {
+  width: 5px;
+}
+
+.notification-popup::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.18);
+  border-radius: 999px;
+}
+
+/* =========================
+   ANIMATION
+========================= */
+
+@keyframes popupFade {
+
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 768px) {
+
+  .notification-wrapper {
+    top: 18px;
+    right: 18px;
+  }
+
+  .bell-btn {
+    width: 58px;
+    height: 58px;
+    font-size: 24px;
+    border-radius: 18px;
+  }
+
+  .notification-popup {
+    width: 280px;
+    right: -6px;
+    padding: 16px;
+    border-radius: 22px;
+  }
+
+  .notification-header h3 {
+    font-size: 22px;
+  }
+
+  .notify-team {
+    font-size: 16px;
+  }
+
+  .notify-message {
+    font-size: 14px;
+  }
+
+}

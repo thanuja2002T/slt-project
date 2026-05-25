@@ -28,54 +28,31 @@ export default function FieldApp() {
   const [notifications, setNotifications] =
     useState([]);
 
-  useEffect(() => {
+useEffect(() => {
 
-    const loadNotifications = () => {
+  const loadNotifications = async () => {
 
-      const today =
-        new Date()
-          .toISOString()
-          .split("T")[0];
+    const { data, error } =
+      await supabase
+        .from("notifications")
+        .select("*")
+        .order("created_at", {
+          ascending: false
+        });
 
-      const savedDate =
-        localStorage.getItem(
-          "notificationDate"
-        );
+    if (error) {
 
-      if (savedDate !== today) {
+      console.log(error);
 
-        localStorage.removeItem(
-          "fieldNotifications"
-        );
+      return;
+    }
 
-        localStorage.setItem(
-          "notificationDate",
-          today
-        );
+    setNotifications(data || []);
+  };
 
-        return [];
-      }
+  loadNotifications();
 
-      return JSON.parse(
-        localStorage.getItem(
-          "fieldNotifications"
-        )
-      ) || [];
-    };
-
-    const timer = setTimeout(() => {
-
-      const data =
-        loadNotifications();
-
-      setNotifications(data);
-
-    }, 0);
-
-    return () =>
-      clearTimeout(timer);
-
-  }, []);
+}, []);
 
   /* =========================
      STATES
@@ -111,74 +88,69 @@ export default function FieldApp() {
   const [workId, setWorkId] =
     useState(null);
 
-  const [faultType] =
-    useState("FTTH");
+  const faultType = "FTTH";
 
   /* =========================
-     VEHICLES
+     BACKEND DATA
   ========================= */
 
-  const vehicles = [
-    "GD 3705",
-    "LF-6153",
-    "PS-2390",
-    "DAE 3945",
-    "53-4251",
-    "PG-9279",
-    "YC-4304",
-    "LF 6150",
-    "57-7429",
-    "58-6225",
-    "QR 8624",
-    "DAC 7547",
-    "57-7429",
-    "QR 8626",
-    "YC 4358",
-    "QR 8636",
-    "253-7479",
-    "53-1937",
-    "PA 8300",
-    "58-6225",
-    "253-1876",
-    "JK 1113"
-  ];
+  const [vehicles, setVehicles] =
+    useState([]);
 
-  /* =========================
-     MEMBERS
-  ========================= */
+  const [members, setMembers] =
+    useState([]);
 
-  const members = [
-    "Tharsan",
-    "M.Jana",
-    "Johnson",
-    "S.Ramesh",
-    "Puvinath",
-    "Kokilaraman",
-    "Anpalagan",
-    "Thiva",
-    "Muruka",
-    "Sathees",
-    "Nanthan",
-    "M.Suresh",
-    "Sivaratnam",
-    "Vikke",
-    "T.Sansu",
-    "Anutharsan",
-    "Rajasimman",
-    "S.Vikna",
-    "Paventhan",
-    "Srikanth",
-    "Jeyaraman",
-    "Ajanthan",
-    "Sasi",
-    "Mathavan",
-    "Rathees",
-    "Naren",
-    "T.Suresh",
-    "Niranjan",
-    "Kavi",
-    "Pakeer"
-  ];
+  useEffect(() => {
+
+    const loadBackendData =
+      async () => {
+
+        /* VEHICLES */
+
+        const {
+          data: vehicleData
+        } = await supabase
+          .from("vehicles")
+          .select("*")
+          .order("id", {
+            ascending: true
+          });
+
+        if (vehicleData) {
+
+          setVehicles(
+            vehicleData.map(
+              (v) =>
+                v.vehicle_number
+            )
+          );
+        }
+
+        /* MEMBERS */
+
+        const {
+          data: memberData
+        } = await supabase
+          .from("members")
+          .select("*")
+          .order("id", {
+            ascending: true
+          });
+
+        if (memberData) {
+
+          setMembers(
+            memberData.map(
+              (m) =>
+                m.member_name
+            )
+          );
+        }
+      };
+
+    loadBackendData();
+
+  }, []);
 
   /* =========================
      FILTERS
@@ -253,20 +225,28 @@ export default function FieldApp() {
     const vehicleOutTime =
       new Date().toISOString();
 
-    const { data, error } = await supabase
-      .from("field_work")
-      .insert([
-        {
-          vehicle: vehicleInput,
-          members: selectedMembers,
-          vehicle_out_time:
-            vehicleOutTime,
-          status: "Vehicle Out",
-          total_faults: 0
-        }
-      ])
-      .select()
-      .single();
+    const { data, error } =
+      await supabase
+        .from("field_work")
+        .insert([
+          {
+            vehicle:
+              vehicleInput,
+
+            members:
+              selectedMembers,
+
+            vehicle_out_time:
+              vehicleOutTime,
+
+            status:
+              "Vehicle Out",
+
+            total_faults: 0
+          }
+        ])
+        .select()
+        .single();
 
     if (error) {
 
@@ -298,25 +278,28 @@ export default function FieldApp() {
     const newFaultCount =
       faultCount;
 
-    const { error } = await supabase
-      .from("field_work")
-      .update({
-        fault_number:
-          newFaultCount,
+    const { error } =
+      await supabase
+        .from("field_work")
+        .update({
 
-        fault_type:
-          faultType,
+          fault_number:
+            newFaultCount,
 
-        completed_time:
-          completedTime,
+          fault_type:
+            faultType,
 
-        total_faults:
-          newFaultCount,
+          completed_time:
+            completedTime,
 
-        status:
-          "Fault Completed"
-      })
-      .eq("id", workId);
+          total_faults:
+            newFaultCount,
+
+          status:
+            "Fault Completed"
+
+        })
+        .eq("id", workId);
 
     if (error) {
 
@@ -356,22 +339,25 @@ export default function FieldApp() {
     const completedFaults =
       faultCount - 1;
 
-    const { error } = await supabase
-      .from("field_work")
-      .update({
-        finish_time:
-          finishTime,
+    const { error } =
+      await supabase
+        .from("field_work")
+        .update({
 
-        vehicle_in_time:
-          finishTime,
+          finish_time:
+            finishTime,
 
-        total_faults:
-          completedFaults,
+          vehicle_in_time:
+            finishTime,
 
-        status:
-          "Vehicle In"
-      })
-      .eq("id", workId);
+          total_faults:
+            completedFaults,
+
+          status:
+            "Vehicle In"
+
+        })
+        .eq("id", workId);
 
     if (error) {
 
@@ -395,6 +381,10 @@ export default function FieldApp() {
 
   const completedFaults =
     faultCount - 1;
+
+  /* =========================
+     POPUP
+  ========================= */
 
   const showEntryPopup = (message) => {
 
@@ -443,85 +433,97 @@ export default function FieldApp() {
 
       )}
 
-      {/* BELL */}
-      <div className="notification-wrapper">
+{/* =========================
+   BELL
+========================= */}
+
+<div className="notification-wrapper">
+
+  <button
+    className="bell-btn"
+    onClick={() =>
+      setShowNotifications(
+        !showNotifications
+      )
+    }
+  >
+    <IoNotifications />
+
+    {notifications.length > 0 && (
+
+      <span className="bell-count">
+        {notifications.length}
+      </span>
+
+    )}
+
+  </button>
+
+  {/* NOTIFICATION POPUP */}
+
+  {showNotifications && (
+
+    <div className="notification-popup">
+
+      <div className="notification-header">
+
+        <h3>
+          Notifications
+        </h3>
 
         <button
-          className="bell-btn"
+          className="close-btn"
           onClick={() =>
-            setShowNotifications(
-              !showNotifications
-            )
+            setShowNotifications(false)
           }
         >
-          <IoNotifications />
-
-          {notifications.length > 0 && (
-
-            <span className="bell-count">
-              {notifications.length}
-            </span>
-
-          )}
-
+          ✕
         </button>
 
       </div>
 
-      {/* NOTIFICATION PANEL */}
-      {showNotifications && (
+      <div className="notification-list">
 
-        <div className="notification-panel">
+        {notifications.length === 0 ? (
 
-          <div className="notification-header">
-
-            <h3>
-              Field Notifications
-            </h3>
-
-            <button
-              className="close-notify"
-              onClick={() =>
-                setShowNotifications(false)
-              }
-            >
-              ✕
-            </button>
-
+          <div className="empty-notification">
+            No notifications today
           </div>
 
-          {notifications.length === 0 ? (
+        ) : (
 
-            <p className="empty-msg">
-              No notifications today
-            </p>
+          notifications.map((n, i) => (
 
-          ) : (
+            <div
+              key={i}
+              className="notification-card"
+            >
 
-            notifications.map(note => (
+              <div className="notify-team">
 
-              <div
-                key={note.id}
-                className="notify-card"
-              >
-
-                <div className="notify-time">
-                  {note.time}
-                </div>
-
-                <pre className="notify-message">
-                  {note.message}
-                </pre>
+                {n.team || "TEAM"}
 
               </div>
 
-            ))
+              <div className="notify-message">
 
-          )}
+                {n.message}
 
-        </div>
+              </div>
 
-      )}
+            </div>
+
+          ))
+
+        )}
+
+      </div>
+
+    </div>
+
+  )}
+
+</div>
 
       {/* BACK */}
       <button
@@ -701,7 +703,7 @@ export default function FieldApp() {
 
               <p>
                 <strong>
-                  Team:
+                  Members:
                 </strong>{" "}
                 {selectedMembers.join(", ")}
               </p>
@@ -744,7 +746,7 @@ export default function FieldApp() {
 
               <p>
                 <strong>
-                  Team:
+                  Members:
                 </strong>{" "}
                 {selectedMembers.join(", ")}
               </p>

@@ -5,120 +5,273 @@ import { supabase } from "../../lib/supabase";
 
 export default function RoleSelect() {
 
-  const [role, setRole] = useState("admin");
-  const [password, setPassword] = useState("");
-  const [teamInput, setTeamInput] = useState("");
-  const [error, setError] = useState("");
-
-  // 🔥 TODAY UPDATE
- const [todayMessages, setTodayMessages] = useState([]);
-  const [showPopup, setShowPopup] = useState(false);
-
   const navigate = useNavigate();
 
-  const teams = [
-    "JA-01", "JA-02", "JA-03", "JA-04",
-    "JA-05", "JA-06", "JA-07", "JA-08",
-    "JA-09", "JA-10", "JA-11", "JA-12",
-    "JA-13", "JA-14", "JA-15", "JA-16",
-    "JA-17", "JA-18"
-  ];
+  /* =========================
+     STATES
+  ========================= */
+
+  const [role, setRole] =
+    useState("admin");
+
+  const [password, setPassword] =
+    useState("");
+
+  const [teamInput, setTeamInput] =
+    useState("");
+
+  const [error, setError] =
+    useState("");
+
+  const [teams, setTeams] =
+    useState([]);
+
+  const [adminPassword, setAdminPassword] =
+    useState("");
+
+  const [todayMessages, setTodayMessages] =
+    useState([]);
+
+  const [showPopup, setShowPopup] =
+    useState(false);
+
+  /* =========================
+     LOAD SETTINGS
+  ========================= */
+
+  const loadSettings = async () => {
+
+    const { data, error } =
+      await supabase
+        .from("app_settings")
+        .select("*")
+        .limit(1);
+
+    if (!error && data.length > 0) {
+
+      setAdminPassword(
+        data[0].admin_password || ""
+      );
+    }
+  };
+
+  /* =========================
+     LOAD TEAMS
+  ========================= */
+
+  const loadTeams = async () => {
+
+    const { data, error } =
+      await supabase
+        .from("teams")
+        .select("*")
+        .order("team_name", {
+          ascending: true
+        });
+
+    if (!error && data) {
+
+      setTeams(data);
+
+    } else {
+
+      console.log(error);
+    }
+  };
+
+  /* =========================
+     LOAD TODAY MESSAGES
+  ========================= */
+
+  const loadTodayMessage =
+    async () => {
+
+      const today = new Date();
+
+      today.setHours(
+        0,
+        0,
+        0,
+        0
+      );
+
+      const todayISO =
+        today.toISOString();
+
+      const { data, error } =
+        await supabase
+          .from("notifications")
+          .select("*")
+          .gte(
+            "created_at",
+            todayISO
+          )
+          .order(
+            "created_at",
+            {
+              ascending: false
+            }
+          );
+
+      if (!error && data) {
+
+        setTodayMessages(data);
+
+      } else {
+
+        console.log(error);
+      }
+    };
+
+  /* =========================
+     USE EFFECT
+  ========================= */
+
+  useEffect(() => {
+
+    const fetchData = async () => {
+
+      await loadSettings();
+
+      await loadTeams();
+
+    };
+
+    fetchData();
+
+  }, []);
+
+  /* =========================
+     FILTERED TEAMS
+  ========================= */
 
   const filteredTeams =
     teamInput.length > 0
+
       ? teams.filter((team) =>
-          team.toLowerCase().includes(teamInput.toLowerCase())
+
+          team.team_name
+            .toLowerCase()
+            .includes(
+              teamInput.toLowerCase()
+            )
         )
+
       : [];
 
-  // 🔥 LOAD TODAY MESSAGE
-const loadTodayMessage = async () => {
+  /* =========================
+     LOGIN
+  ========================= */
 
-  const today = new Date();
-
-  today.setHours(0, 0, 0, 0);
-
-  const todayISO = today.toISOString();
-
-  const { data, error } = await supabase
-    .from("notifications")
-    .select("*")
-    .gte("created_at", todayISO)
-    .order("created_at", { ascending: false });
-
-  if (!error && data) {
-
-    setTodayMessages(data);
-
-  } else {
-
-    console.log(error);
-
-  }
-};
-  // 🔥 LOGIN
   const handleLogin = () => {
 
     setError("");
 
+    /* ADMIN */
+
     if (role === "admin") {
 
       if (!password) {
-        setError("Enter password");
+
+        setError(
+          "Enter admin password"
+        );
+
         return;
       }
 
-      if (password !== "1234") {
-        setError("Wrong password");
+      if (
+        password !== adminPassword
+      ) {
+
+        setError(
+          "Wrong admin password"
+        );
+
         return;
       }
 
       navigate("/dashboard");
+    }
 
-    } else {
+    /* FIELD */
+
+    else {
 
       if (!teamInput) {
-        setError("Enter team name");
+
+        setError(
+          "Select team"
+        );
+
         return;
       }
+
+      localStorage.setItem(
+        "selectedTeam",
+        teamInput
+      );
 
       navigate("/field");
     }
   };
 
-  // 🔥 AUTO REMOVE ERROR
+  /* =========================
+     AUTO REMOVE ERROR
+  ========================= */
+
   useEffect(() => {
 
     if (error) {
 
-      const timer = setTimeout(() => {
-        setError("");
-      }, 1200);
+      const timer =
+        setTimeout(() => {
 
-      return () => clearTimeout(timer);
+          setError("");
+
+        }, 1500);
+
+      return () =>
+        clearTimeout(timer);
     }
 
   }, [error]);
 
+  /* =========================
+     JSX
+  ========================= */
+
   return (
+
     <div className="login-container">
 
-      {/* 🔴 ERROR TOAST */}
-      {error && <div className="toast-error">{error}</div>}
+      {/* ERROR */}
+      {error && (
 
-      {/* 🔥 POPUP */}
+        <div className="toast-error">
+          {error}
+        </div>
+
+      )}
+
+      {/* POPUP */}
       {showPopup && (
+
         <div className="popup-overlay">
 
           <div className="update-popup">
 
             <div className="popup-header">
 
-              <h2>📢 Today Update</h2>
+              <h2>
+                📢 Today Update
+              </h2>
 
               <button
                 className="close-btn"
-                onClick={() => setShowPopup(false)}
+                onClick={() =>
+                  setShowPopup(false)
+                }
               >
                 ✕
               </button>
@@ -129,31 +282,43 @@ const loadTodayMessage = async () => {
 
               <div className="popup-scroll">
 
-            {todayMessages.map((item, index) => (
+                {todayMessages.map(
+                  (item, index) => (
 
-            <div key={index} className="message-card">
+                    <div
+                      key={index}
+                      className="message-card"
+                    >
 
-               <pre>{item.message}</pre>
+                      <pre>
+                        {item.message}
+                      </pre>
 
-             </div>
+                    </div>
 
-            ))}
+                  )
+                )}
 
-           </div>
+              </div>
 
             </div>
 
           </div>
 
         </div>
+
       )}
 
       {/* LEFT */}
       <div className="left-panel">
 
-        <h1>WELCOME-SLT</h1>
+        <h1>
+          WELCOME-SLT
+        </h1>
 
-        <p>Field Performance Monitoring System</p>
+        <p>
+          Field Performance Monitoring System
+        </p>
 
         <div className="glow"></div>
 
@@ -166,98 +331,103 @@ const loadTodayMessage = async () => {
           ● System Online — v2.4.1
         </div>
 
-        <h2>Select your role</h2>
+        <h2>
+          Select your role
+        </h2>
 
-        {/* 🔥 SMALL TODAY UPDATE */}
-      {role === "field" && todayMessages.length > 0 && (
 
-          <div
-            className="today-update-box"
-            onClick={() => setShowPopup(true)}
-          >
 
-            <div className="update-dot"></div>
-
-            <p>
-              📢 Today new update available
-            </p>
-
-            <span>Click to view</span>
-
-          </div>
-        )}
-
-        {/* ROLE CARDS */}
+        {/* ROLE */}
         <div className="role-container">
 
           {/* ADMIN */}
           <div
-            className={`role-card ${role === "admin" ? "active" : ""}`}
-            onClick={() => setRole("admin")}
+            className={`role-card ${
+              role === "admin"
+                ? "active"
+                : ""
+            }`}
+            onClick={() =>
+              setRole("admin")
+            }
           >
+
             🛡️
-            <h3>Admin</h3>
+
+            <h3>
+              Admin
+            </h3>
+
           </div>
 
           {/* FIELD */}
           <div
-            className={`role-card ${role === "field" ? "active" : ""}`}
+            className={`role-card ${
+              role === "field"
+                ? "active"
+                : ""
+            }`}
             onClick={() => {
+
               setRole("field");
+
               loadTodayMessage();
+
             }}
           >
+
             🔧
-            <h3>Field</h3>
+
+            <h3>
+              Field
+            </h3>
+
           </div>
 
         </div>
 
-        {/* ADMIN LOGIN */}
-        {role === "admin" && (
-
-          <div className="input-group">
-
-            <label>PASSWORD</label>
-
-            <input
-              type="password"
-              placeholder="Enter admin password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-
-          </div>
-        )}
-
-        {/* FIELD LOGIN */}
+        {/* TEAM SELECT */}
         {role === "field" && (
 
           <div className="input-group">
 
-            <label>TEAM NAME</label>
+            <label>
+              TEAM NAME
+            </label>
 
             <input
               placeholder="Type team..."
               value={teamInput}
-              onChange={(e) => setTeamInput(e.target.value)}
+              onChange={(e) =>
+                setTeamInput(
+                  e.target.value
+                )
+              }
             />
 
             {filteredTeams.length > 0 && (
 
               <div className="suggestions">
 
-                {filteredTeams.map((team, i) => (
+                {filteredTeams.map(
+                  (team) => (
 
-                  <div
-                    key={i}
-                    className="suggestion-item"
-                    onClick={() => setTeamInput(team)}
-                  >
-                    {team}
-                  </div>
+                    <div
+                      key={team.id}
+                      className="suggestion-item"
+                      onClick={() =>
+                        setTeamInput(
+                          team.team_name
+                        )
+                      }
+                    >
 
-                ))}
+                      {team.team_name}
+
+                    </div>
+
+                  )
+                )}
 
               </div>
             )}
@@ -265,12 +435,38 @@ const loadTodayMessage = async () => {
           </div>
         )}
 
+        {/* ADMIN PASSWORD */}
+        {role === "admin" && (
+
+          <div className="input-group">
+
+            <label>
+              ADMIN PASSWORD
+            </label>
+
+            <input
+              type="password"
+              placeholder="Enter admin password"
+              value={password}
+              onChange={(e) =>
+                setPassword(
+                  e.target.value
+                )
+              }
+            />
+
+          </div>
+
+        )}
+
         {/* BUTTON */}
         <button
           className="login-btn"
           onClick={handleLogin}
         >
+
           Continue →
+
         </button>
 
       </div>
