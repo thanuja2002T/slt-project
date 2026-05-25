@@ -156,6 +156,25 @@ export default function DailyUpdate() {
   const [teamData, setTeamData] =
     useState({});
 
+    const [popupMessage, setPopupMessage] =
+  useState("");
+
+const [showPopup, setShowPopup] =
+  useState(false);
+
+const showEntryPopup = (message) => {
+
+  setPopupMessage(message);
+
+  setShowPopup(true);
+
+  setTimeout(() => {
+
+    setShowPopup(false);
+
+  }, 2500);
+
+};
   /* =========================
    LOAD TEAMS
 ========================= */
@@ -277,60 +296,123 @@ useEffect(() => {
     }));
   };
 
-
-
-  /* SEND */
 const submit = async () => {
 
   try {
 
-    const notifications = Object.keys(teamData)
-      .map(team => {
+    /* =========================
+       DAILY FAULTS SAVE
+    ========================= */
 
-        const t = teamData[team];
+    const dailyRows = [];
 
-        return {
+    Object.keys(teamData).forEach(team => {
+
+      const t = teamData[team];
+
+      const totalAssigned =
+        Number(t.ftthA || 0) +
+        Number(t.pstnA || 0) +
+        Number(t.dataA || 0);
+
+      const totalFinished =
+        Number(t.ftthB || 0) +
+        Number(t.pstnB || 0) +
+        Number(t.dataB || 0);
+
+      (t.members || []).forEach(member => {
+
+        dailyRows.push({
 
           team: team,
 
-          message: `
+          member: member,
 
-${team}
+          total_assigned: totalAssigned,
 
-Members:
-${t.members.join(", ")}
+          total_finished: totalFinished
 
-FTTH Assigned: ${t.ftthA || 0}
-FTTH Attended: ${t.ftthB || 0}
-
-PSTN Assigned: ${t.pstnA || 0}
-PSTN Attended: ${t.pstnB || 0}
-
-DATA Assigned: ${t.dataA || 0}
-DATA Attended: ${t.dataB || 0}
-
-`
-        };
+        });
 
       });
 
-    const { error } =
-      await supabase
-        .from("notifications")
-        .insert(notifications);
+    });
 
-    if (error) {
+    const {
+      error: dailyError
+    } = await supabase
+      .from("daily_faults")
+      .insert(dailyRows);
 
-      console.log(error);
+    if (dailyError) {
 
-      alert("Database Error");
+      console.log(dailyError);
+
+      alert("Daily faults save failed");
 
       return;
     }
 
-    alert("Sent to Field ✅");
+    /* =========================
+       NOTIFICATIONS SAVE
+    ========================= */
+
+    const notifications =
+      Object.keys(teamData)
+        .map(team => {
+
+          const t = teamData[team];
+
+          return {
+
+            team: team,
+
+            message: `
+
+${team}
+
+Members:
+${(t.members || []).join(", ")}
+
+FTTH Assigned: ${t.ftthA || 0}
+FTTH Finished: ${t.ftthB || 0}
+
+PSTN Assigned: ${t.pstnA || 0}
+PSTN Finished: ${t.pstnB || 0}
+
+DATA Assigned: ${t.dataA || 0}
+DATA Finished: ${t.dataB || 0}
+
+`
+          };
+
+        });
+
+    const {
+      error: notificationError
+    } = await supabase
+      .from("notifications")
+      .insert(notifications);
+
+    if (notificationError) {
+
+      console.log(notificationError);
+
+      alert("Notification save failed");
+
+      return;
+    }
+
+    /* =========================
+       MODERN SUCCESS POPUP
+    ========================= */
+
+    showEntryPopup(
+      "✅ Successfully Sent to Field"
+    );
 
     /* CLEAR */
+
     setTeamMembers({});
 
     setTeamData({});
@@ -347,6 +429,8 @@ DATA Attended: ${t.dataB || 0}
 
 };
 
+
+
   /* END DAY */
   const endDay = () => {
 
@@ -360,6 +444,7 @@ DATA Attended: ${t.dataB || 0}
   };
 
   return (
+   <>
 
     <div className="daily-page">
 
@@ -750,5 +835,16 @@ DATA Attended: ${t.dataB || 0}
       )}
 
     </div>
+    {
+    showPopup && (
+      <div className="entry-popup">
+        {popupMessage}
+      </div>
+    )
+  }
+</>
   );
+
+  
 }
+

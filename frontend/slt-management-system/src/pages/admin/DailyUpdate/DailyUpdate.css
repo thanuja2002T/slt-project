@@ -63,6 +63,45 @@
   border: 1px solid #3b82f6;
 }
 
+.entry-popup {
+  position: fixed;
+  top: 30px;
+  right: 30px;
+  background: linear-gradient(
+    135deg,
+    #1d4ed8,
+    #2563eb
+  );
+  color: white;
+  padding: 18px 28px;
+  border-radius: 16px;
+  font-size: 16px;
+  font-weight: 600;
+  box-shadow:
+    0 10px 30px rgba(37, 99, 235, 0.4);
+  z-index: 99999;
+  animation:
+    popupSlide 0.35s ease;
+}
+
+@keyframes popupSlide {
+
+  from {
+    opacity: 0;
+    transform:
+      translateY(-20px)
+      scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform:
+      translateY(0)
+      scale(1);
+  }
+
+}
+
 /* TAGS */
 
 .tags {
