@@ -30,25 +30,51 @@ export default function FieldApp() {
 
 useEffect(() => {
 
-  const loadNotifications = async () => {
+ const loadNotifications = async () => {
 
-    const { data, error } =
-      await supabase
-        .from("notifications")
-        .select("*")
-        .order("created_at", {
-          ascending: false
-        });
+  const now = new Date();
 
-    if (error) {
+  const sriLankaToday =
+    new Date(
+      now.toLocaleString(
+        "en-US",
+        {
+          timeZone: "Asia/Colombo"
+        }
+      )
+    );
 
-      console.log(error);
+  sriLankaToday.setHours(
+    0,
+    0,
+    0,
+    0
+  );
 
-      return;
-    }
+  const todayISO =
+    sriLankaToday.toISOString();
 
-    setNotifications(data || []);
-  };
+  const { data, error } =
+    await supabase
+      .from("notifications")
+      .select("*")
+      .gte(
+        "created_at",
+        todayISO
+      )
+      .order("created_at", {
+        ascending: false
+      });
+
+  if (error) {
+
+    console.log(error);
+
+    return;
+  }
+
+  setNotifications(data || []);
+};
 
   loadNotifications();
 
@@ -57,6 +83,7 @@ useEffect(() => {
   /* =========================
      STATES
   ========================= */
+
 
   const [vehicleInput, setVehicleInput] =
     useState("");
@@ -88,7 +115,11 @@ useEffect(() => {
   const [workId, setWorkId] =
     useState(null);
 
-  const faultType = "FTTH";
+  const teamName =
+  localStorage.getItem(
+    "selectedTeam"
+  ) || "";  
+
 
   /* =========================
      BACKEND DATA
@@ -99,6 +130,8 @@ useEffect(() => {
 
   const [members, setMembers] =
     useState([]);
+
+  
 
   useEffect(() => {
 
@@ -230,19 +263,24 @@ useEffect(() => {
         .from("field_work")
         .insert([
           {
-            vehicle:
-              vehicleInput,
+              team_name:
+                  teamName,
 
-            members:
-              selectedMembers,
+               vehicle:
+                  vehicleInput,
 
-            vehicle_out_time:
-              vehicleOutTime,
+               members:
+                 selectedMembers,
 
-            status:
-              "Vehicle Out",
+               vehicle_out_time:
+                  vehicleOutTime,
 
-            total_faults: 0
+               status:
+                 "Vehicle Out",
+
+               total_faults: 0,
+
+            faults_time: []
           }
         ])
         .select()
@@ -270,62 +308,96 @@ useEffect(() => {
      FAULT COMPLETE
   ========================= */
 
-  const handleNext = async () => {
+const handleNext = async () => {
 
-    const completedTime =
-      new Date().toISOString();
+  const completedTime =
+    new Date().toISOString();
 
-    const newFaultCount =
-      faultCount;
+  const newFaultCount =
+    faultCount;
 
-    const { error } =
-      await supabase
-        .from("field_work")
-        .update({
+  /* GET CURRENT ARRAY */
 
-          fault_number:
-            newFaultCount,
+  const {
+    data: currentRow,
+    error: fetchError
+  } = await supabase
+    .from("field_work")
+    .select("faults_time")
+    .eq("id", workId)
+    .single();
 
-          fault_type:
-            faultType,
+  if (fetchError) {
 
-          completed_time:
-            completedTime,
+    console.log(fetchError);
 
-          total_faults:
-            newFaultCount,
+    return;
+  }
 
-          status:
-            "Fault Completed"
+  const existingFaults =
+    currentRow?.faults_time || [];
 
-        })
-        .eq("id", workId);
+  const updatedFaults = [
 
-    if (error) {
+    ...existingFaults,
 
-      console.log(error);
+    {
+      fault_no:
+        newFaultCount,
 
-      alert("Save failed");
 
-      return;
+      completed_time:
+        completedTime
     }
 
-    showEntryPopup(
-      `Fault ${newFaultCount} Completed`
-    );
+  ];
 
-    setFaultCount(
-      faultCount + 1
-    );
+  const { error } =
+    await supabase
+      .from("field_work")
+      .update({
 
-    setBlinkCard(true);
+        completed_time:
+          completedTime,
 
-    setTimeout(() => {
+        total_faults:
+          newFaultCount,
 
-      setBlinkCard(false);
+        faults_time:
+          updatedFaults,
 
-    }, 1000);
-  };
+        status:
+          "Fault Completed"
+
+      })
+      .eq("id", workId);
+
+  if (error) {
+
+    console.log(error);
+
+    alert("Save failed");
+
+    return;
+  }
+
+  showEntryPopup(
+    `Fault ${newFaultCount} Completed`
+  );
+
+  setFaultCount(
+    faultCount + 1
+  );
+
+  setBlinkCard(true);
+
+  setTimeout(() => {
+
+    setBlinkCard(false);
+
+  }, 1000);
+
+};
 
   /* =========================
      FINISH
@@ -542,6 +614,8 @@ useEffect(() => {
           Field App
         </h1>
 
+
+
         <div className="form-box">
 
           {/* VEHICLE */}
@@ -692,23 +766,24 @@ useEffect(() => {
         ) : finished ? (
 
           <>
-            <div className="info-box">
+<div className="info-box">
 
-              <p>
-                <strong>
-                  Vehicle:
-                </strong>{" "}
-                {vehicleInput}
-              </p>
+  <p>
+    <strong>Team Name:</strong>{" "}
+    {teamName}
+  </p>
 
-              <p>
-                <strong>
-                  Members:
-                </strong>{" "}
-                {selectedMembers.join(", ")}
-              </p>
+  <p>
+    <strong>Vehicle:</strong>{" "}
+    {vehicleInput}
+  </p>
 
-            </div>
+  <p>
+    <strong>Members:</strong>{" "}
+    {selectedMembers.join(", ")}
+  </p>
+
+</div>
 
             <div className="thank-box">
 
@@ -735,23 +810,24 @@ useEffect(() => {
         ) : (
 
           <>
-            <div className="info-box">
+<div className="info-box">
 
-              <p>
-                <strong>
-                  Vehicle:
-                </strong>{" "}
-                {vehicleInput}
-              </p>
+  <p>
+    <strong>Team Name:</strong>{" "}
+    {teamName}
+  </p>
 
-              <p>
-                <strong>
-                  Members:
-                </strong>{" "}
-                {selectedMembers.join(", ")}
-              </p>
+  <p>
+    <strong>Vehicle:</strong>{" "}
+    {vehicleInput}
+  </p>
 
-            </div>
+  <p>
+    <strong>Members:</strong>{" "}
+    {selectedMembers.join(", ")}
+  </p>
+
+</div>
 
             <div
               className={`fault-box ${

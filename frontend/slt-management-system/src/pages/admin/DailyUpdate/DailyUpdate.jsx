@@ -300,11 +300,12 @@ const submit = async () => {
 
   try {
 
-    /* =========================
-       DAILY FAULTS SAVE
-    ========================= */
-
     const dailyRows = [];
+    const faultCountRows = [];
+
+    /* =========================
+       BUILD DATA
+    ========================= */
 
     Object.keys(teamData).forEach(team => {
 
@@ -324,9 +325,9 @@ const submit = async () => {
 
         dailyRows.push({
 
-          team: team,
+          team,
 
-          member: member,
+          member,
 
           total_assigned: totalAssigned,
 
@@ -334,9 +335,29 @@ const submit = async () => {
 
         });
 
+        faultCountRows.push({
+
+          team,
+
+          member,
+
+          assigned: totalAssigned,
+
+          finished: totalFinished,
+
+          pending:
+            totalAssigned -
+            totalFinished
+
+        });
+
       });
 
     });
+
+    /* =========================
+       DAILY FAULTS
+    ========================= */
 
     const {
       error: dailyError
@@ -348,13 +369,32 @@ const submit = async () => {
 
       console.log(dailyError);
 
-      alert("Daily faults save failed");
+      alert("Daily Fault Save Failed");
 
       return;
     }
 
     /* =========================
-       NOTIFICATIONS SAVE
+       FAULT COUNT
+    ========================= */
+
+    const {
+      error: faultCountError
+    } = await supabase
+      .from("fault_count")
+      .insert(faultCountRows);
+
+    if (faultCountError) {
+
+      console.log(faultCountError);
+
+      alert("Fault Count Save Failed");
+
+      return;
+    }
+
+    /* =========================
+       NOTIFICATIONS
     ========================= */
 
     const notifications =
@@ -365,7 +405,7 @@ const submit = async () => {
 
           return {
 
-            team: team,
+            team,
 
             message: `
 
@@ -398,20 +438,18 @@ DATA Finished: ${t.dataB || 0}
 
       console.log(notificationError);
 
-      alert("Notification save failed");
+      alert("Notification Save Failed");
 
       return;
     }
 
     /* =========================
-       MODERN SUCCESS POPUP
+       SUCCESS
     ========================= */
 
     showEntryPopup(
       "✅ Successfully Sent to Field"
     );
-
-    /* CLEAR */
 
     setTeamMembers({});
 
@@ -423,12 +461,11 @@ DATA Finished: ${t.dataB || 0}
 
     console.log(err);
 
-    alert("Something went wrong");
+    alert("Something Went Wrong");
 
   }
 
 };
-
 
 
   /* END DAY */

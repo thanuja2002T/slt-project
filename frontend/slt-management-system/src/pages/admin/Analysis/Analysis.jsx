@@ -1,146 +1,406 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { supabase } from "../../../lib/supabase.js";
 import "./FaultAnalysis.css";
 
 export default function Analysis() {
   const [activeTab, setActiveTab] = useState("overall");
-  const [selectedMonth, setSelectedMonth] = useState("May 2026");
+  const [selectedMonth, setSelectedMonth] = useState("");
+  const [selectedMember, setSelectedMember] = useState("All Members");
 
-  const months = [
-    "January 2026",
-    "February 2026",
-    "March 2026",
-    "April 2026",
-    "May 2026",
-  ];
+  const [overallDetails, setOverallDetails] = useState([]);
+  const [dailyTeams, setDailyTeams] = useState([]);
+  const [months, setMonths] = useState([]);
+  const [membersList, setMembersList] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  // OVERALL DETAILS TABLE
-  const overallDetails = [
-    {
-      date: "2026/01/01",
-      day: "Thursday",
-      in: "07:52",
-      out: "18:15",
-      vehicle: "GD 3705",
-      vehicleOut: "9:05",
-      firstFault: "12:28",
-      lastFault: "17:24",
-      summary: "10/8",
-      percent: "80%",
-      outToFirst: "1h 30m",
-      lastToIn: "1h 32m",
-      avgFault: "1h 28m",
-      maxFault: "2h 10m",
-    },
+  const mountedRef = useRef(false);
 
-    {
-      date: "2026/01/02",
-      day: "Friday",
-      in: "07:52",
-      out: "19:02",
-      vehicle: "GD 3705",
-      vehicleOut: "9:10",
-      firstFault: "12:24",
-      lastFault: "16:46",
-      summary: "6/6",
-      percent: "100%",
-      outToFirst: "1h 20m",
-      lastToIn: "1h 25m",
-      avgFault: "1h 22m",
-      maxFault: "1h 55m",
-    },
+  // ─────────────────────────────────────────
+  // TIME UTILITIES
+  // ─────────────────────────────────────────
 
-    {
-      date: "2026/01/03",
-      day: "Saturday",
-      in: "08:30",
-      out: "18:00",
-      vehicle: "GD 3710",
-      vehicleOut: "9:00",
-      firstFault: "11:50",
-      lastFault: "17:10",
-      summary: "8/8",
-      percent: "100%",
-      outToFirst: "1h 10m",
-      lastToIn: "1h 20m",
-      avgFault: "1h 15m",
-      maxFault: "1h 48m",
-    },
-  ];
+  const toSLT = (utcString) => {
+    if (!utcString) return "—";
+    return new Date(utcString).toLocaleTimeString("en-GB", {
+      timeZone: "Asia/Colombo",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
 
-  // DAILY FAULT ANALYSIS
-  const dailyTeams = [
-    {
-      team: "JA1",
-      rows: [
-        {
-          date: "12/5/2026",
-          member: "Tharsan",
-          entries: [
-            { time: "9.15", value: "6/0" },
-            { time: "10.26", value: "4/1" },
-            { time: "11.29", value: "4/1" },
-            { time: "12.29", value: "3/1" },
-            { time: "1.31", value: "4/1" },
-            { time: "2.51", value: "5/1" },
-            { time: "3.53", value: "6/2" },
-            { time: "4.51", value: "6/3" },
-            { time: "5.53", value: "6/6" },
-          ],
-          summary: "6/6",
-        },
-      ],
-    },
+  const toSLTDate = (utcString) => {
+    if (!utcString) return "—";
+    return new Date(utcString).toLocaleDateString("en-GB", {
+      timeZone: "Asia/Colombo",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  };
 
-    {
-      team: "JA2",
-      rows: [
-        {
-          date: "12/5/2026",
-          member: "Sathees",
-          entries: [
-            { time: "9.37", value: "3/0" },
-            { time: "10.37", value: "6/0" },
-            { time: "12.09", value: "6/2" },
-            { time: "1.37", value: "7/3" },
-            { time: "2.59", value: "7/3" },
-            { time: "3.59", value: "8/4" },
-          ],
-          summary: "8/7",
-        },
-      ],
-    },
+  const toSLTDay = (utcString) => {
+    if (!utcString) return "—";
+    return new Date(utcString).toLocaleDateString("en-GB", {
+      timeZone: "Asia/Colombo",
+      weekday: "long",
+    });
+  };
 
-    {
-      team: "JA3",
-      rows: [],
-    },
+  const toSLTMonthLabel = (utcString) => {
+    if (!utcString) return "";
+    return new Date(utcString).toLocaleDateString("en-GB", {
+      timeZone: "Asia/Colombo",
+      month: "long",
+      year: "numeric",
+    });
+  };
 
-    {
-      team: "JA4",
-      rows: [
-        {
-          date: "12/5/2026",
-          member: "Puvinath",
-          entries: [
-            { time: "9.31", value: "2/0" },
-            { time: "10.36", value: "2/0" },
-            { time: "11.35", value: "6/1" },
-            { time: "12.39", value: "5/3" },
-            { time: "1.21", value: "5/3" },
-            { time: "2.54", value: "6/4" },
-            { time: "3.56", value: "7/5" },
-          ],
-          summary: "7/7",
-        },
-      ],
-    },
-  ];
+  const toSLTDateKey = (utcString) => {
+    if (!utcString) return "";
+    return new Date(utcString).toLocaleDateString("en-GB", {
+      timeZone: "Asia/Colombo",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  };
+
+  const diffFormatted = (utcStart, utcEnd) => {
+    if (!utcStart || !utcEnd) return "—";
+    const diffMs = new Date(utcEnd) - new Date(utcStart);
+    if (diffMs < 0) return "—";
+    const totalMins = Math.round(diffMs / 60000);
+    const h = Math.floor(totalMins / 60);
+    const m = totalMins % 60;
+    if (h === 0) return `${m}m`;
+    return `${h}h ${m}m`;
+  };
+
+  const getMemberName = (members) => {
+    if (Array.isArray(members)) return members[0] ?? "";
+    return members ?? "";
+  };
+
+  // ─────────────────────────────────────────
+  // HELPER: build assigned lookup map
+  // Priority: fault_count.assigned → daily_faults.total_assigned
+  // Key: "memberName__DD/MM/YYYY"
+  // ─────────────────────────────────────────
+
+  const buildAssignedMap = (fcData, dfData) => {
+    const map = {};
+
+    // 1. daily_faults first (base)
+    dfData.forEach((df) => {
+      const key = `${df.member}__${toSLTDateKey(df.created_at)}`;
+      map[key] = df.total_assigned;
+    });
+
+    // 2. fault_count override — if data exists, it wins
+    fcData.forEach((fc) => {
+      const key = `${fc.member}__${toSLTDateKey(fc.created_at)}`;
+      if (fc.assigned != null) {
+        map[key] = fc.assigned;
+      }
+    });
+
+    return map;
+  };
+
+  // ─────────────────────────────────────────
+  // FETCH: OVERALL DETAIL
+  // ─────────────────────────────────────────
+
+  const fetchOverallData = useCallback(async (month, member) => {
+    if (!month) return;
+    setLoading(true);
+
+    const { data: fwData, error: fwError } = await supabase
+      .from("field_work")
+      .select(
+        "id, vehicle, members, team_name, vehicle_out_time, vehicle_in_time, faults_time, created_at"
+      )
+      .order("created_at");
+
+    if (fwError) {
+      console.error("fetchOverallData field_work error:", fwError.message);
+      setLoading(false);
+      return;
+    }
+
+    let filtered = fwData.filter(
+      (row) => toSLTMonthLabel(row.created_at) === month
+    );
+
+    if (member !== "All Members") {
+      filtered = filtered.filter(
+        (row) => getMemberName(row.members) === member
+      );
+    }
+
+    if (filtered.length === 0) {
+      setOverallDetails([]);
+      setLoading(false);
+      return;
+    }
+
+    const memberNames = [
+      ...new Set(filtered.map((r) => getMemberName(r.members))),
+    ];
+
+    // ── Fetch daily_faults ──
+    const { data: dfData, error: dfError } = await supabase
+      .from("daily_faults")
+      .select("member, total_assigned, created_at")
+      .in("member", memberNames);
+
+    if (dfError) {
+      console.error("fetchOverallData daily_faults error:", dfError.message);
+      setLoading(false);
+      return;
+    }
+
+    // ── CHANGE: Fetch fault_count too ──
+    const { data: fcData, error: fcError } = await supabase
+      .from("fault_count")
+      .select("member, assigned, created_at")
+      .in("member", memberNames);
+
+    // fault_count empty or error → use empty array, fallback to daily_faults
+    const fcRows = fcError ? [] : (fcData ?? []);
+
+    // ── CHANGE: build merged assigned map ──
+    const assignedMap = buildAssignedMap(fcRows, dfData ?? []);
+
+    const rows = filtered.map((row) => {
+      const memberName = getMemberName(row.members);
+      const teamName = row.team_name ?? "—";
+      const dateKey = toSLTDateKey(row.created_at);
+
+      // ── CHANGE: use merged map ──
+      const assigned = assignedMap[`${memberName}__${dateKey}`] ?? 0;
+
+      const faults = Array.isArray(row.faults_time) ? row.faults_time : [];
+      const finished = faults.length;
+      const sortedFaults = [...faults].sort(
+        (a, b) => new Date(a.completed_time) - new Date(b.completed_time)
+      );
+
+      const firstFaultUTC = sortedFaults[0]?.completed_time ?? null;
+      const lastFaultUTC =
+        sortedFaults[sortedFaults.length - 1]?.completed_time ?? null;
+
+      const summary = `${assigned}/${finished}`;
+      const percent =
+        assigned > 0
+          ? Math.round((finished / assigned) * 100) + "%"
+          : "0%";
+
+      let maxGapMs = 0;
+      for (let i = 1; i < sortedFaults.length; i++) {
+        const gap =
+          new Date(sortedFaults[i].completed_time) -
+          new Date(sortedFaults[i - 1].completed_time);
+        if (gap > maxGapMs) maxGapMs = gap;
+      }
+      const maxGapMins = Math.round(maxGapMs / 60000);
+      const maxFaultStr =
+        maxGapMins > 0
+          ? maxGapMins >= 60
+            ? `${Math.floor(maxGapMins / 60)}h ${maxGapMins % 60}m`
+            : `${maxGapMins}m`
+          : "—";
+
+      let avgFaultStr = "—";
+      if (lastFaultUTC && row.vehicle_out_time && finished > 0) {
+        const avgMins = Math.round(
+          (new Date(lastFaultUTC) - new Date(row.vehicle_out_time)) /
+            finished /
+            60000
+        );
+        avgFaultStr =
+          avgMins >= 60
+            ? `${Math.floor(avgMins / 60)}h ${avgMins % 60}m`
+            : `${avgMins}m`;
+      }
+
+      return {
+        date: toSLTDate(row.created_at),
+        day: toSLTDay(row.created_at),
+        team: teamName,
+        member: memberName,
+        in: toSLT(row.vehicle_in_time),
+        out: toSLT(row.vehicle_out_time),
+        vehicle: row.vehicle,
+        vehicleOut: toSLT(row.vehicle_out_time),
+        firstFault: toSLT(firstFaultUTC),
+        lastFault: toSLT(lastFaultUTC),
+        summary,
+        percent,
+        outToFirst: diffFormatted(row.vehicle_out_time, firstFaultUTC),
+        lastToIn: diffFormatted(lastFaultUTC, row.vehicle_in_time),
+        avgFault: avgFaultStr,
+        maxFault: maxFaultStr,
+      };
+    });
+
+    setOverallDetails(rows);
+    setLoading(false);
+  }, []);
+
+  // ─────────────────────────────────────────
+  // FETCH: DAILY FAULT ANALYSIS
+  // ─────────────────────────────────────────
+
+  const fetchDailyData = useCallback(async (month) => {
+    if (!month) return;
+    setLoading(true);
+
+    const { data: fwData, error: fwError } = await supabase
+      .from("field_work")
+      .select("id, members, team_name, faults_time, created_at")
+      .order("created_at");
+
+    if (fwError) {
+      console.error("fetchDailyData field_work error:", fwError.message);
+      setLoading(false);
+      return;
+    }
+
+    const filtered = fwData.filter(
+      (row) => toSLTMonthLabel(row.created_at) === month
+    );
+
+    // ── Fetch daily_faults ──
+    const { data: dfData, error: dfError } = await supabase
+      .from("daily_faults")
+      .select("member, total_assigned, created_at");
+
+    if (dfError) {
+      console.error("fetchDailyData daily_faults error:", dfError.message);
+      setLoading(false);
+      return;
+    }
+
+    // ── CHANGE: Fetch fault_count too ──
+    const { data: fcData, error: fcError } = await supabase
+      .from("fault_count")
+      .select("member, assigned, created_at");
+
+    const fcRows = fcError ? [] : (fcData ?? []);
+
+    // ── CHANGE: build merged assigned map ──
+    const assignedMap = buildAssignedMap(fcRows, dfData ?? []);
+
+    const teamMap = {};
+
+    filtered.forEach((row) => {
+      const memberName = getMemberName(row.members);
+      const team = row.team_name ?? "Unknown";
+      const dateKey = toSLTDateKey(row.created_at);
+
+      // ── CHANGE: use merged map ──
+      const assigned = assignedMap[`${memberName}__${dateKey}`] ?? 0;
+
+      const faults = Array.isArray(row.faults_time) ? row.faults_time : [];
+      const sortedFaults = [...faults].sort(
+        (a, b) => new Date(a.completed_time) - new Date(b.completed_time)
+      );
+      const finished = sortedFaults.length;
+
+      if (!teamMap[team]) teamMap[team] = [];
+
+      teamMap[team].push({
+        date: toSLTDate(row.created_at),
+        member: memberName,
+        entries: sortedFaults.map((f, idx) => ({
+          time: toSLT(f.completed_time),
+          value: `${assigned}/${f.fault_no ?? idx + 1}`,
+        })),
+        summary: `${assigned}/${finished}`,
+      });
+    });
+
+    const teamsArray = Object.keys(teamMap)
+      .sort()
+      .map((team) => ({ team, rows: teamMap[team] }));
+
+    setDailyTeams(teamsArray);
+    setLoading(false);
+  }, []);
+
+  // ─────────────────────────────────────────
+  // MOUNT
+  // ─────────────────────────────────────────
+
+  useEffect(() => {
+    if (mountedRef.current) return;
+    mountedRef.current = true;
+
+    const init = async () => {
+      const { data: mData, error: mError } = await supabase
+        .from("members")
+        .select("member_name")
+        .order("member_name");
+      if (!mError) setMembersList(mData.map((m) => m.member_name));
+
+      const { data: fwData, error: fwError } = await supabase
+        .from("field_work")
+        .select("created_at")
+        .order("created_at");
+      if (fwError) return;
+
+      const seen = new Set();
+      const uniqueMonths = [];
+      fwData.forEach((row) => {
+        const label = toSLTMonthLabel(row.created_at);
+        if (!seen.has(label)) {
+          seen.add(label);
+          uniqueMonths.push(label);
+        }
+      });
+
+      if (uniqueMonths.length === 0) return;
+
+      const latestMonth = uniqueMonths[uniqueMonths.length - 1];
+      setMonths(uniqueMonths);
+      setSelectedMonth(latestMonth);
+      fetchOverallData(latestMonth, "All Members");
+    };
+
+    init();
+  }, []);
+
+  // ─────────────────────────────────────────
+  // HANDLERS
+  // ─────────────────────────────────────────
+
+  const handleMonthChange = (e) => {
+    const month = e.target.value;
+    setSelectedMonth(month);
+    if (activeTab === "overall") fetchOverallData(month, selectedMember);
+    if (activeTab === "daily") fetchDailyData(month);
+  };
+
+  const handleMemberChange = (e) => {
+    const member = e.target.value;
+    setSelectedMember(member);
+    fetchOverallData(selectedMonth, member);
+  };
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    if (tab === "overall") fetchOverallData(selectedMonth, selectedMember);
+    if (tab === "daily") fetchDailyData(selectedMonth);
+  };
+
+  // ─────────────────────────────────────────
+  // HELPERS
+  // ─────────────────────────────────────────
 
   const getPercent = (summary) => {
     const [assigned, attended] = summary.split("/").map(Number);
-
     if (!assigned) return 0;
-
     return Math.round((attended / assigned) * 100);
   };
 
@@ -150,292 +410,189 @@ export default function Analysis() {
     return "red";
   };
 
+  // ─────────────────────────────────────────
+  // JSX
+  // ─────────────────────────────────────────
+
   return (
     <div className="analysis-page">
 
-      {/* HEADER */}
       <div className="analysis-header">
         <h1>Fault Analysis</h1>
         <p>Daily Detailed Report</p>
       </div>
 
-      {/* TABS */}
       <div className="analysis-tabs">
         <button
           className={activeTab === "overall" ? "active" : ""}
-          onClick={() => setActiveTab("overall")}
+          onClick={() => handleTabChange("overall")}
         >
           Overall Detail
         </button>
-
         <button
           className={activeTab === "daily" ? "active" : ""}
-          onClick={() => setActiveTab("daily")}
+          onClick={() => handleTabChange("daily")}
         >
           Daily Fault Analysis
         </button>
       </div>
 
-      {/* OVERALL DETAIL */}
       {activeTab === "overall" && (
         <>
           <div className="top-filters">
-
-  {/* MONTH SELECT */}
-  <select
-    value={selectedMonth}
-    onChange={(e) => setSelectedMonth(e.target.value)}
-  >
-
-    <option>January 2026</option>
-    <option>February 2026</option>
-    <option>March 2026</option>
-    <option>April 2026</option>
-    <option>May 2026</option>
-    <option>June 2026</option>
-    <option>July 2026</option>
-    <option>August 2026</option>
-    <option>September 2026</option>
-    <option>October 2026</option>
-    <option>November 2026</option>
-    <option>December 2026</option>
-
-  </select>
-
-  {/* MEMBER SELECT */}
-  <select>
-
-    <option>All Members</option>
-
-    <option>Tharsan</option>
-    <option>M.Jana</option>
-    <option>Johnson</option>
-    <option>S.Ramesh</option>
-    <option>Puvinath</option>
-    <option>Kokilaraman</option>
-    <option>Anpalagan</option>
-    <option>Thiva</option>
-    <option>Muruka</option>
-    <option>Sathees</option>
-    <option>Nanthan</option>
-    <option>M.Suresh</option>
-    <option>Sivaratnam</option>
-    <option>Vikke</option>
-    <option>T.Sansu</option>
-    <option>Anutharsan</option>
-    <option>Rajasimman</option>
-    <option>S.Vikna</option>
-    <option>Paventhan</option>
-    <option>Srikanth</option>
-    <option>Jeyaraman</option>
-    <option>Ajanthan</option>
-    <option>Sasi</option>
-    <option>Mathavan</option>
-    <option>Rathees</option>
-    <option>Naren</option>
-    <option>T.Suresh</option>
-    <option>Niranjan</option>
-    <option>Kavi</option>
-    <option>Pakeer</option>
-
-  </select>
-
-</div>
+            <select value={selectedMonth} onChange={handleMonthChange}>
+              {months.map((month) => (
+                <option key={month}>{month}</option>
+              ))}
+            </select>
+            <select value={selectedMember} onChange={handleMemberChange}>
+              <option>All Members</option>
+              {membersList.map((m) => (
+                <option key={m}>{m}</option>
+              ))}
+            </select>
+          </div>
 
           <div className="analysis-card">
-
-            <h2>
-              FAULT ANALYSIS BY SERVICE NUMBER (Every Works)
-            </h2>
-
-            <div className="table-container">
-
-              <table>
-
-                <thead>
-                  <tr>
-                    <th>DATE</th>
-                    <th>DAY</th>
-                    <th>IN</th>
-                    <th>OUT</th>
-                    <th>VEHICLE</th>
-                    <th>VEHICLE OUT</th>
-                    <th>1ST FAULT</th>
-                    <th>LAST FAULT</th>
-                    <th>SUMMARY</th>
-                    <th>%</th>
-                    <th>OUT → 1ST</th>
-                    <th>LAST → IN</th>
-                    <th>AVG/FAULT</th>
-                    <th>MAXIMUM TIME TAKEN FOR A FAULT</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-
-                  {overallDetails.map((item, index) => (
-                    <tr key={index}>
-                      <td>{item.date}</td>
-                      <td>{item.day}</td>
-                      <td>{item.in}</td>
-                      <td>{item.out}</td>
-                      <td>{item.vehicle}</td>
-                      <td>{item.vehicleOut}</td>
-                      <td>{item.firstFault}</td>
-                      <td>{item.lastFault}</td>
-                      <td>{item.summary}</td>
-
-                      <td className={getColorClass(
-                        parseInt(item.percent)
-                      )}>
-                        {item.percent}
-                      </td>
-
-                      <td className="yellow_vf">
-                        {item.outToFirst}
-                      </td>
-
-                      <td className="orange_vf">
-                        {item.lastToIn}
-                      </td>
-
-                      <td className="pink_vf">
-                        {item.avgFault}
-                      </td>
-
-                      <td className="max_fault">
-                        {item.maxFault}
-                      </td>
+            <h2>FAULT ANALYSIS BY SERVICE NUMBER (Every Works)</h2>
+            {loading ? (
+              <div className="loading-state">Loading...</div>
+            ) : (
+              <div className="table-container">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>DATE</th>
+                      <th>DAY</th>
+                      <th>TEAM</th>
+                      <th>MEMBER</th>
+                      <th>IN</th>
+                      <th>OUT</th>
+                      <th>VEHICLE</th>
+                      <th>VEHICLE OUT</th>
+                      <th>1ST FAULT</th>
+                      <th>LAST FAULT</th>
+                      <th>SUMMARY</th>
+                      <th>%</th>
+                      <th>OUT → 1ST</th>
+                      <th>LAST → IN</th>
+                      <th>AVG/FAULT</th>
+                      <th>MAXIMUM TIME TAKEN FOR A FAULT</th>
                     </tr>
-                  ))}
-
-                </tbody>
-              </table>
-
-            </div>
+                  </thead>
+                  <tbody>
+                    {overallDetails.length === 0 ? (
+                      <tr>
+                        <td colSpan="16" className="empty-cell">
+                          No Data
+                        </td>
+                      </tr>
+                    ) : (
+                      overallDetails.map((item, index) => (
+                        <tr key={index}>
+                          <td>{item.date}</td>
+                          <td>{item.day}</td>
+                          <td>{item.team}</td>
+                          <td>{item.member}</td>
+                          <td>{item.in}</td>
+                          <td>{item.out}</td>
+                          <td>{item.vehicle}</td>
+                          <td>{item.vehicleOut}</td>
+                          <td>{item.firstFault}</td>
+                          <td>{item.lastFault}</td>
+                          <td>{item.summary}</td>
+                          <td className={getColorClass(parseInt(item.percent))}>
+                            {item.percent}
+                          </td>
+                          <td className="yellow_vf">{item.outToFirst}</td>
+                          <td className="orange_vf">{item.lastToIn}</td>
+                          <td className="pink_vf">{item.avgFault}</td>
+                          <td className="max_fault">{item.maxFault}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </>
       )}
 
-      {/* DAILY ANALYSIS */}
       {activeTab === "daily" && (
         <>
           <div className="top-filters">
-            <select
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-            >
+            <select value={selectedMonth} onChange={handleMonthChange}>
               {months.map((month) => (
                 <option key={month}>{month}</option>
               ))}
             </select>
           </div>
 
-          <div className="daily-analysis-grid">
-
-            {dailyTeams.map((team, teamIndex) => (
-              <div className="daily-team-card" key={teamIndex}>
-
-                <div className="team-header">
-                  {team.team}
-                </div>
-
-                <div className="table-scroll">
-
-                  <table className="daily-team-table">
-
-                    <thead>
-                      <tr>
-                        <th>DATE</th>
-                        <th>TEAM</th>
-                        <th>TIME</th>
-                        <th>ULT/ATT</th>
-                        <th>SUMMARY</th>
-                        <th>COMPLETION %</th>
-                      </tr>
-                    </thead>
-
-                    <tbody>
-
-                      {team.rows.length === 0 ? (
+          {loading ? (
+            <div className="loading-state">Loading...</div>
+          ) : (
+            <div className="daily-analysis-grid">
+              {dailyTeams.map((team, teamIndex) => (
+                <div className="daily-team-card" key={teamIndex}>
+                  <div className="team-header">{team.team}</div>
+                  <div className="table-scroll">
+                    <table className="daily-team-table">
+                      <thead>
                         <tr>
-                          <td
-                            colSpan="6"
-                            className="empty-cell"
-                          >
-                            No Data
-                          </td>
+                          <th>DATE</th>
+                          <th>MEMBER</th>
+                          <th>TIME</th>
+                          <th>ULT/ATT</th>
+                          <th>SUMMARY</th>
+                          <th>COMPLETION %</th>
                         </tr>
-                      ) : (
-                        team.rows.map((group, groupIndex) => {
-
-                          const percent = getPercent(group.summary);
-
-                          return group.entries.map(
-                            (entry, entryIndex) => (
+                      </thead>
+                      <tbody>
+                        {team.rows.length === 0 ? (
+                          <tr>
+                            <td colSpan="6" className="empty-cell">
+                              No Data
+                            </td>
+                          </tr>
+                        ) : (
+                          team.rows.map((group, groupIndex) => {
+                            const percent = getPercent(group.summary);
+                            return group.entries.map((entry, entryIndex) => (
                               <tr key={`${groupIndex}-${entryIndex}`}>
-
-                                {/* DATE */}
                                 {entryIndex === 0 && (
-                                  <td
-                                    rowSpan={group.entries.length}
-                                  >
+                                  <td rowSpan={group.entries.length}>
                                     {group.date}
                                   </td>
                                 )}
-
-                                {/* MEMBER */}
                                 {entryIndex === 0 && (
-                                  <td
-                                    rowSpan={group.entries.length}
-                                  >
+                                  <td rowSpan={group.entries.length}>
                                     {group.member}
                                   </td>
                                 )}
-
-                                {/* TIME */}
                                 <td>{entry.time}</td>
-
-                                {/* ULT/ATT */}
                                 <td>{entry.value}</td>
-
-                                {/* SUMMARY */}
-                                {entryIndex ===
-                                  group.entries.length - 1 && (
-                                  <td
-                                    rowSpan="1"
-                                    className="summary-cell"
-                                  >
+                                {entryIndex === group.entries.length - 1 && (
+                                  <td className="summary-cell">
                                     {group.summary}
                                   </td>
                                 )}
-
-                                {/* COMPLETION */}
-                                {entryIndex ===
-                                  group.entries.length - 1 && (
-                                  <td
-                                    className={
-                                      getColorClass(percent)
-                                    }
-                                  >
+                                {entryIndex === group.entries.length - 1 && (
+                                  <td className={getColorClass(percent)}>
                                     {percent}%
                                   </td>
                                 )}
-
                               </tr>
-                            )
-                          );
-                        })
-                      )}
-
-                    </tbody>
-
-                  </table>
+                            ));
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              </div>
-            ))}
-
-          </div>
+              ))}
+            </div>
+          )}
         </>
       )}
     </div>
