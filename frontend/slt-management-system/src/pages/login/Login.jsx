@@ -191,7 +191,12 @@ export default function RoleSelect() {
         return;
       }
 
-      navigate("/dashboard");
+      localStorage.setItem(
+       "isLoggedIn",
+       "true"
+     );
+
+navigate("/dashboard");
     }
 
     /* FIELD */

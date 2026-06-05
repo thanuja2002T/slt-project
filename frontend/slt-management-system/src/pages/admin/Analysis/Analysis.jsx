@@ -9,6 +9,7 @@ export default function Analysis() {
 
   const [overallDetails, setOverallDetails] = useState([]);
   const [dailyTeams, setDailyTeams] = useState([]);
+  const [monthlySummary, setMonthlySummary] = useState([]);
   const [months, setMonths] = useState([]);
   const [membersList, setMembersList] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -76,6 +77,14 @@ export default function Analysis() {
     return `${h}h ${m}m`;
   };
 
+  const minsToFormatted = (totalMins) => {
+    if (!totalMins || totalMins <= 0) return "—";
+    const h = Math.floor(totalMins / 60);
+    const m = Math.round(totalMins % 60);
+    if (h === 0) return `${m}m`;
+    return `${h}h ${m}m`;
+  };
+
   const getMemberName = (members) => {
     if (Array.isArray(members)) return members[0] ?? "";
     return members ?? "";
@@ -84,26 +93,18 @@ export default function Analysis() {
   // ─────────────────────────────────────────
   // HELPER: build assigned lookup map
   // Priority: fault_count.assigned → daily_faults.total_assigned
-  // Key: "memberName__DD/MM/YYYY"
   // ─────────────────────────────────────────
 
   const buildAssignedMap = (fcData, dfData) => {
     const map = {};
-
-    // 1. daily_faults first (base)
     dfData.forEach((df) => {
       const key = `${df.member}__${toSLTDateKey(df.created_at)}`;
       map[key] = df.total_assigned;
     });
-
-    // 2. fault_count override — if data exists, it wins
     fcData.forEach((fc) => {
       const key = `${fc.member}__${toSLTDateKey(fc.created_at)}`;
-      if (fc.assigned != null) {
-        map[key] = fc.assigned;
-      }
+      if (fc.assigned != null) map[key] = fc.assigned;
     });
-
     return map;
   };
 
@@ -148,7 +149,6 @@ export default function Analysis() {
       ...new Set(filtered.map((r) => getMemberName(r.members))),
     ];
 
-    // ── Fetch daily_faults ──
     const { data: dfData, error: dfError } = await supabase
       .from("daily_faults")
       .select("member, total_assigned, created_at")
@@ -160,24 +160,18 @@ export default function Analysis() {
       return;
     }
 
-    // ── CHANGE: Fetch fault_count too ──
     const { data: fcData, error: fcError } = await supabase
       .from("fault_count")
       .select("member, assigned, created_at")
       .in("member", memberNames);
 
-    // fault_count empty or error → use empty array, fallback to daily_faults
     const fcRows = fcError ? [] : (fcData ?? []);
-
-    // ── CHANGE: build merged assigned map ──
     const assignedMap = buildAssignedMap(fcRows, dfData ?? []);
 
     const rows = filtered.map((row) => {
       const memberName = getMemberName(row.members);
       const teamName = row.team_name ?? "—";
       const dateKey = toSLTDateKey(row.created_at);
-
-      // ── CHANGE: use merged map ──
       const assigned = assignedMap[`${memberName}__${dateKey}`] ?? 0;
 
       const faults = Array.isArray(row.faults_time) ? row.faults_time : [];
@@ -271,7 +265,6 @@ export default function Analysis() {
       (row) => toSLTMonthLabel(row.created_at) === month
     );
 
-    // ── Fetch daily_faults ──
     const { data: dfData, error: dfError } = await supabase
       .from("daily_faults")
       .select("member, total_assigned, created_at");
@@ -282,14 +275,11 @@ export default function Analysis() {
       return;
     }
 
-    // ── CHANGE: Fetch fault_count too ──
     const { data: fcData, error: fcError } = await supabase
       .from("fault_count")
       .select("member, assigned, created_at");
 
     const fcRows = fcError ? [] : (fcData ?? []);
-
-    // ── CHANGE: build merged assigned map ──
     const assignedMap = buildAssignedMap(fcRows, dfData ?? []);
 
     const teamMap = {};
@@ -298,8 +288,6 @@ export default function Analysis() {
       const memberName = getMemberName(row.members);
       const team = row.team_name ?? "Unknown";
       const dateKey = toSLTDateKey(row.created_at);
-
-      // ── CHANGE: use merged map ──
       const assigned = assignedMap[`${memberName}__${dateKey}`] ?? 0;
 
       const faults = Array.isArray(row.faults_time) ? row.faults_time : [];
@@ -326,6 +314,185 @@ export default function Analysis() {
       .map((team) => ({ team, rows: teamMap[team] }));
 
     setDailyTeams(teamsArray);
+    setLoading(false);
+  }, []);
+
+  // ─────────────────────────────────────────
+  // FETCH: MONTHLY SUMMARY — NEW TAB
+  // ─────────────────────────────────────────
+
+  const fetchMonthlySummary = useCallback(async (month) => {
+    if (!month) return;
+    setLoading(true);
+
+    const { data: fwData, error: fwError } = await supabase
+      .from("field_work")
+      .select(
+        "id, members, team_name, vehicle_out_time, vehicle_in_time, faults_time, created_at"
+      )
+      .order("created_at");
+
+    if (fwError) {
+      console.error("fetchMonthlySummary field_work error:", fwError.message);
+      setLoading(false);
+      return;
+    }
+
+    const filtered = fwData.filter(
+      (row) => toSLTMonthLabel(row.created_at) === month
+    );
+
+    if (filtered.length === 0) {
+      setMonthlySummary([]);
+      setLoading(false);
+      return;
+    }
+
+    const memberNames = [
+      ...new Set(filtered.map((r) => getMemberName(r.members))),
+    ];
+
+    const { data: dfData, error: dfError } = await supabase
+      .from("daily_faults")
+      .select("member, total_assigned, created_at")
+      .in("member", memberNames);
+
+    if (dfError) {
+      console.error("fetchMonthlySummary daily_faults error:", dfError.message);
+      setLoading(false);
+      return;
+    }
+
+    const { data: fcData, error: fcError } = await supabase
+      .from("fault_count")
+      .select("member, assigned, created_at")
+      .in("member", memberNames);
+
+    const fcRows = fcError ? [] : (fcData ?? []);
+    const assignedMap = buildAssignedMap(fcRows, dfData ?? []);
+
+    // Group by member — aggregate all days
+    const memberMap = {};
+
+    filtered.forEach((row) => {
+      const memberName = getMemberName(row.members);
+      const teamName = row.team_name ?? "—";
+      const dateKey = toSLTDateKey(row.created_at);
+      const assigned = assignedMap[`${memberName}__${dateKey}`] ?? 0;
+
+      const faults = Array.isArray(row.faults_time) ? row.faults_time : [];
+      const finished = faults.length;
+      const sortedFaults = [...faults].sort(
+        (a, b) => new Date(a.completed_time) - new Date(b.completed_time)
+      );
+
+      const firstFaultUTC = sortedFaults[0]?.completed_time ?? null;
+      const lastFaultUTC =
+        sortedFaults[sortedFaults.length - 1]?.completed_time ?? null;
+
+      // day % for best/worst
+      const dayPercent =
+        assigned > 0 ? Math.round((finished / assigned) * 100) : 0;
+
+      // out→1st in minutes
+      const outToFirstMins =
+        firstFaultUTC && row.vehicle_out_time
+          ? (new Date(firstFaultUTC) - new Date(row.vehicle_out_time)) / 60000
+          : null;
+
+      // last→in in minutes
+      const lastToInMins =
+        lastFaultUTC && row.vehicle_in_time
+          ? (new Date(row.vehicle_in_time) - new Date(lastFaultUTC)) / 60000
+          : null;
+
+      // avg/fault in minutes for this day
+      const avgFaultMins =
+        lastFaultUTC && row.vehicle_out_time && finished > 0
+          ? (new Date(lastFaultUTC) - new Date(row.vehicle_out_time)) /
+            finished /
+            60000
+          : null;
+
+      // max gap for this day
+      let maxGapMs = 0;
+      for (let i = 1; i < sortedFaults.length; i++) {
+        const gap =
+          new Date(sortedFaults[i].completed_time) -
+          new Date(sortedFaults[i - 1].completed_time);
+        if (gap > maxGapMs) maxGapMs = gap;
+      }
+      const maxGapMins = maxGapMs > 0 ? maxGapMs / 60000 : null;
+
+      if (!memberMap[memberName]) {
+        memberMap[memberName] = {
+          member: memberName,
+          team: teamName,
+          days: new Set(),
+          totalAssigned: 0,
+          totalFinished: 0,
+          bestDayPercent: 0,
+          worstDayPercent: 100,
+          outToFirstMinsArr: [],
+          lastToInMinsArr: [],
+          avgFaultMinsArr: [],
+          maxGapMinsArr: [],
+        };
+      }
+
+      const m = memberMap[memberName];
+      m.days.add(dateKey);
+      m.totalAssigned += assigned;
+      m.totalFinished += finished;
+
+      if (dayPercent > m.bestDayPercent) m.bestDayPercent = dayPercent;
+      if (dayPercent < m.worstDayPercent) m.worstDayPercent = dayPercent;
+
+      if (outToFirstMins !== null && outToFirstMins >= 0)
+        m.outToFirstMinsArr.push(outToFirstMins);
+      if (lastToInMins !== null && lastToInMins >= 0)
+        m.lastToInMinsArr.push(lastToInMins);
+      if (avgFaultMins !== null && avgFaultMins >= 0)
+        m.avgFaultMinsArr.push(avgFaultMins);
+      if (maxGapMins !== null)
+        m.maxGapMinsArr.push(maxGapMins);
+    });
+
+    // Build final rows
+    const avg = (arr) =>
+      arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
+
+    const summaryRows = Object.values(memberMap)
+      .sort((a, b) => a.member.localeCompare(b.member))
+      .map((m) => {
+        const overallPercent =
+          m.totalAssigned > 0
+            ? Math.round((m.totalFinished / m.totalAssigned) * 100)
+            : 0;
+
+        const maxEver =
+          m.maxGapMinsArr.length > 0
+            ? Math.max(...m.maxGapMinsArr)
+            : null;
+
+        return {
+          member: m.member,
+          team: m.team,
+          totalDays: m.days.size,
+          totalAssigned: m.totalAssigned,
+          totalFinished: m.totalFinished,
+          overallPercent,
+          bestDayPercent: m.bestDayPercent,
+          worstDayPercent:
+            m.worstDayPercent === 100 ? 0 : m.worstDayPercent,
+          avgOutToFirst: minsToFormatted(avg(m.outToFirstMinsArr)),
+          avgLastToIn: minsToFormatted(avg(m.lastToInMinsArr)),
+          avgFault: minsToFormatted(avg(m.avgFaultMinsArr)),
+          maxFaultEver: minsToFormatted(maxEver),
+        };
+      });
+
+    setMonthlySummary(summaryRows);
     setLoading(false);
   }, []);
 
@@ -380,6 +547,7 @@ export default function Analysis() {
     setSelectedMonth(month);
     if (activeTab === "overall") fetchOverallData(month, selectedMember);
     if (activeTab === "daily") fetchDailyData(month);
+    if (activeTab === "monthly") fetchMonthlySummary(month);
   };
 
   const handleMemberChange = (e) => {
@@ -392,6 +560,7 @@ export default function Analysis() {
     setActiveTab(tab);
     if (tab === "overall") fetchOverallData(selectedMonth, selectedMember);
     if (tab === "daily") fetchDailyData(selectedMonth);
+    if (tab === "monthly") fetchMonthlySummary(selectedMonth);
   };
 
   // ─────────────────────────────────────────
@@ -435,8 +604,15 @@ export default function Analysis() {
         >
           Daily Fault Analysis
         </button>
+        <button
+          className={activeTab === "monthly" ? "active" : ""}
+          onClick={() => handleTabChange("monthly")}
+        >
+          Monthly Summary
+        </button>
       </div>
 
+      {/* ── OVERALL DETAIL TAB ── */}
       {activeTab === "overall" && (
         <>
           <div className="top-filters">
@@ -483,9 +659,7 @@ export default function Analysis() {
                   <tbody>
                     {overallDetails.length === 0 ? (
                       <tr>
-                        <td colSpan="16" className="empty-cell">
-                          No Data
-                        </td>
+                        <td colSpan="16" className="empty-cell">No Data</td>
                       </tr>
                     ) : (
                       overallDetails.map((item, index) => (
@@ -519,6 +693,7 @@ export default function Analysis() {
         </>
       )}
 
+      {/* ── DAILY FAULT ANALYSIS TAB ── */}
       {activeTab === "daily" && (
         <>
           <div className="top-filters">
@@ -551,9 +726,7 @@ export default function Analysis() {
                       <tbody>
                         {team.rows.length === 0 ? (
                           <tr>
-                            <td colSpan="6" className="empty-cell">
-                              No Data
-                            </td>
+                            <td colSpan="6" className="empty-cell">No Data</td>
                           </tr>
                         ) : (
                           team.rows.map((group, groupIndex) => {
@@ -593,6 +766,77 @@ export default function Analysis() {
               ))}
             </div>
           )}
+        </>
+      )}
+
+      {/* ── MONTHLY SUMMARY TAB — NEW ── */}
+      {activeTab === "monthly" && (
+        <>
+          <div className="top-filters">
+            <select value={selectedMonth} onChange={handleMonthChange}>
+              {months.map((month) => (
+                <option key={month}>{month}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="analysis-card">
+            <h2>MONTHLY PERFORMANCE SUMMARY — {selectedMonth}</h2>
+            {loading ? (
+              <div className="loading-state">Loading...</div>
+            ) : (
+              <div className="table-container">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>MEMBER</th>
+                      <th>TEAM</th>
+                      <th>TOTAL DAYS</th>
+                      <th>TOTAL ASSIGNED</th>
+                      <th>TOTAL FINISHED</th>
+                      <th>OVERALL %</th>
+                      <th>BEST DAY %</th>
+                      <th>WORST DAY %</th>
+                      <th>AVG OUT → 1ST</th>
+                      <th>AVG LAST → IN</th>
+                      <th>AVG / FAULT</th>
+                      <th>MAX FAULT (MONTH)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {monthlySummary.length === 0 ? (
+                      <tr>
+                        <td colSpan="12" className="empty-cell">No Data</td>
+                      </tr>
+                    ) : (
+                      monthlySummary.map((item, index) => (
+                        <tr key={index}>
+                          <td>{item.member}</td>
+                          <td>{item.team}</td>
+                          <td>{item.totalDays}</td>
+                          <td>{item.totalAssigned}</td>
+                          <td>{item.totalFinished}</td>
+                          <td className={getColorClass(item.overallPercent)}>
+                            {item.overallPercent}%
+                          </td>
+                          <td className="green">
+                            {item.bestDayPercent}%
+                          </td>
+                          <td className={getColorClass(item.worstDayPercent)}>
+                            {item.worstDayPercent}%
+                          </td>
+                          <td className="yellow_vf">{item.avgOutToFirst}</td>
+                          <td className="orange_vf">{item.avgLastToIn}</td>
+                          <td className="pink_vf">{item.avgFault}</td>
+                          <td className="max_fault">{item.maxFaultEver}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </>
       )}
     </div>

@@ -1,4 +1,9 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate
+} from "react-router-dom";
 
 import Access from "./pages/Access/Access";
 import Login from "./pages/login/Login";
@@ -10,47 +15,168 @@ import DailyUpdate from "./pages/admin/DailyUpdate/DailyUpdate";
 import Summary from "./pages/admin/Summary/Summary";
 import Analysis from "./pages/admin/Analysis/Analysis";
 import Notifications from "./pages/admin/Notification/Notifications";
-import Settings from "./pages/admin/Setting/setting" 
+import Settings from "./pages/admin/Setting/setting";
+
 import FieldApp from "./pages/Field/FieldApp";
 
+/* =========================
+   ACCESS ROUTE
+========================= */
+
+function AccessRoute({ children }) {
+
+  const accessGranted =
+    localStorage.getItem(
+      "accessGranted"
+    );
+
+  return accessGranted === "true"
+    ? children
+    : <Navigate to="/" replace />;
+
+}
+
+/* =========================
+   PROTECTED ROUTE
+========================= */
+
+function ProtectedRoute({ children }) {
+
+  const accessGranted =
+    localStorage.getItem(
+      "accessGranted"
+    );
+
+  const isLoggedIn =
+    localStorage.getItem(
+      "isLoggedIn"
+    );
+
+  return accessGranted === "true" &&
+         isLoggedIn === "true"
+    ? children
+    : <Navigate to="/" replace />;
+
+}
+
+/* =========================
+   APP
+========================= */
+
 function App() {
+
   return (
+
     <BrowserRouter>
+
       <Routes>
 
-        <Route path="/" element={<Access />} />
-        <Route path="/role" element={<Login />} />
+        {/* ACCESS PAGE */}
 
-        {/* 🔥 ADMIN ROUTES */}
-        <Route path="/dashboard" element={
-          <AdminLayout><AdminDashboard /></AdminLayout>
-        } />
+        <Route
+          path="/"
+          element={<Access />}
+        />
 
-        <Route path="/daily" element={
-          <AdminLayout><DailyUpdate /></AdminLayout>
-        } />
+        {/* ROLE PAGE */}
 
-        <Route path="/summary" element={
-          <AdminLayout><Summary /></AdminLayout>
-        } />
+        <Route
+          path="/role"
+          element={
+            <AccessRoute>
+              <Login />
+            </AccessRoute>
+          }
+        />
 
-        <Route path="/analysis" element={
-          <AdminLayout><Analysis /></AdminLayout>
-        } />
+        {/* ADMIN ROUTES */}
 
-        <Route path="/notifications" element={
-          <AdminLayout><Notifications /></AdminLayout>
-        } />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <AdminDashboard />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
 
-        <Route path="/settings" element={
-          <AdminLayout><Settings /></AdminLayout>
-        } />
+        <Route
+          path="/daily"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <DailyUpdate />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
 
-        <Route path="/field" element={<FieldApp />} />
+        <Route
+          path="/summary"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <Summary />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/analysis"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <Analysis />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/notifications"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <Notifications />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <Settings />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* FIELD */}
+
+        <Route
+          path="/field"
+          element={<FieldApp />}
+        />
+
+        {/* INVALID ROUTE */}
+
+        <Route
+          path="*"
+          element={<Navigate to="/" replace />}
+        />
 
       </Routes>
+
     </BrowserRouter>
+
   );
+
 }
 
 export default App;
