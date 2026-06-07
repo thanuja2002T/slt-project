@@ -237,3 +237,22 @@ tbody tr:hover td {
     grid-template-columns: 1fr;
   }
 }
+
+@media (max-width: 768px) {
+
+  .analysis-page {
+    padding: 20px 15px;
+  }
+
+  .analysis-tabs {
+    gap: 10px;
+  }
+
+  .analysis-tabs button {
+    flex: 1;
+    padding: 12px 10px;
+    font-size: 13px;
+    min-width: 0;
+  }
+
+}

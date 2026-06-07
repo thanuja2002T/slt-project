@@ -14,7 +14,6 @@ import AdminDashboard from "./pages/admin/Dashboard/AdminDashboard";
 import DailyUpdate from "./pages/admin/DailyUpdate/DailyUpdate";
 import Summary from "./pages/admin/Summary/Summary";
 import Analysis from "./pages/admin/Analysis/Analysis";
-import Notifications from "./pages/admin/Notification/Notifications";
 import Settings from "./pages/admin/Setting/setting";
 
 import FieldApp from "./pages/Field/FieldApp";
@@ -130,17 +129,6 @@ function App() {
             <ProtectedRoute>
               <AdminLayout>
                 <Analysis />
-              </AdminLayout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/notifications"
-          element={
-            <ProtectedRoute>
-              <AdminLayout>
-                <Notifications />
               </AdminLayout>
             </ProtectedRoute>
           }

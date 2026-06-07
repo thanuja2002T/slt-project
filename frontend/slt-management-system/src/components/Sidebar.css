@@ -98,3 +98,36 @@ nav a.active {
   color: #6b7280;
 }
 
+.user-info {
+  width: 100%;
+}
+
+.logout-btn {
+
+  margin-top: 10px;
+
+  width: 100%;
+
+  padding: 8px 12px;
+
+  border: none;
+
+  border-radius: 8px;
+
+  background: #ef4444;
+
+  color: white;
+
+  cursor: pointer;
+
+  font-size: 13px;
+
+  transition: 0.3s;
+
+}
+
+.logout-btn:hover {
+
+  background: #dc2626;
+
+}
