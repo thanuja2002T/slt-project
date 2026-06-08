@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "../../../lib/supabase.js";
+import Select from "react-select";
 import "./FaultAnalysis.css";
 
 export default function Analysis() {
@@ -12,7 +13,29 @@ export default function Analysis() {
   const [monthlySummary, setMonthlySummary] = useState([]);
   const [months, setMonths] = useState([]);
   const [membersList, setMembersList] = useState([]);
+  const [teamsList, setTeamsList] = useState([]);
+  const [vehiclesList, setVehiclesList] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  const [showModal, setShowModal] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [modalError, setModalError] = useState("");
+  const [modalSuccess, setModalSuccess] = useState("");
+
+  const [form, setForm] = useState({
+    date: "",
+    team: "",
+    member: [],
+    vehicle: "",
+    vehicleOutTime: "",
+    vehicleInTime: "",
+    totalAssigned: "",
+    totalFinished: "",
+    firstFaultTime: "",
+    lastFaultTime: "",
+    avgFaultTime: "",
+    maxFaultTime: "",
+  });
 
   const mountedRef = useRef(false);
 
@@ -90,21 +113,56 @@ export default function Analysis() {
     return members ?? "";
   };
 
+  const sltToUtc = (date, time) => {
+    if (!date || !time) return null;
+    return new Date(`${date}T${time}:00+05:30`).toISOString();
+  };
+
   // ─────────────────────────────────────────
-  // HELPER: build assigned lookup map
-  // Priority: fault_count.assigned → daily_faults.total_assigned
+  // HELPER: build assigned + finished map
+  // ── console.logs removed ──
   // ─────────────────────────────────────────
 
   const buildAssignedMap = (fcData, dfData) => {
     const map = {};
+
     dfData.forEach((df) => {
-      const key = `${df.member}__${toSLTDateKey(df.created_at)}`;
-      map[key] = df.total_assigned;
+      const dateKey = toSLTDateKey(df.created_at);
+
+      let members = [];
+      if (Array.isArray(df.member)) {
+        members = df.member;
+      } else if (typeof df.member === "string") {
+        const trimmed = df.member.trim();
+        if (trimmed.startsWith("[")) {
+          try {
+            const parsed = JSON.parse(trimmed);
+            members = Array.isArray(parsed) ? parsed : [trimmed];
+          } catch {
+            members = [trimmed];
+          }
+        } else {
+          members = [trimmed];
+        }
+      }
+
+      members.forEach((member) => {
+        const key = `${member.trim()}__${dateKey}`;
+        map[key] = {
+          assigned: df.total_assigned ?? 0,
+          finished: df.total_finished ?? 0,
+        };
+      });
     });
+
     fcData.forEach((fc) => {
-      const key = `${fc.member}__${toSLTDateKey(fc.created_at)}`;
-      if (fc.assigned != null) map[key] = fc.assigned;
+      const key = `${fc.member.trim()}__${toSLTDateKey(fc.created_at)}`;
+      if (fc.assigned != null) {
+        if (!map[key]) map[key] = { assigned: 0, finished: 0 };
+        map[key].assigned = fc.assigned;
+      }
     });
+
     return map;
   };
 
@@ -119,7 +177,7 @@ export default function Analysis() {
     const { data: fwData, error: fwError } = await supabase
       .from("field_work")
       .select(
-        "id, vehicle, members, team_name, vehicle_out_time, vehicle_in_time, faults_time, created_at"
+        "id, vehicle, members, team_name, vehicle_out_time, vehicle_in_time, first_fault_time, last_fault_time, avg_fault_time, max_fault_time, total_faults, faults_time, created_at"
       )
       .order("created_at");
 
@@ -151,8 +209,7 @@ export default function Analysis() {
 
     const { data: dfData, error: dfError } = await supabase
       .from("daily_faults")
-      .select("member, total_assigned, created_at")
-      .in("member", memberNames);
+      .select("member, total_assigned, total_finished, created_at");
 
     if (dfError) {
       console.error("fetchOverallData daily_faults error:", dfError.message);
@@ -168,21 +225,36 @@ export default function Analysis() {
     const fcRows = fcError ? [] : (fcData ?? []);
     const assignedMap = buildAssignedMap(fcRows, dfData ?? []);
 
-    const rows = filtered.map((row) => {
-      const memberName = getMemberName(row.members);
+    const rows = filtered.flatMap((row) => {
+      const rowMembers = Array.isArray(row.members)
+        ? row.members
+        : [row.members];
+      const memberName = rowMembers[0];
       const teamName = row.team_name ?? "—";
       const dateKey = toSLTDateKey(row.created_at);
-      const assigned = assignedMap[`${memberName}__${dateKey}`] ?? 0;
 
+      const mapEntry = assignedMap[`${memberName}__${dateKey}`] ?? {
+        assigned: 0,
+        finished: 0,
+      };
+
+      const assigned = mapEntry.assigned;
+      const finished = row.total_faults ?? 0;
       const faults = Array.isArray(row.faults_time) ? row.faults_time : [];
-      const finished = faults.length;
+
       const sortedFaults = [...faults].sort(
         (a, b) => new Date(a.completed_time) - new Date(b.completed_time)
       );
 
-      const firstFaultUTC = sortedFaults[0]?.completed_time ?? null;
+      const firstFaultUTC =
+        sortedFaults.length > 0
+          ? sortedFaults[0]?.completed_time
+          : row.first_fault_time;
+
       const lastFaultUTC =
-        sortedFaults[sortedFaults.length - 1]?.completed_time ?? null;
+        sortedFaults.length > 0
+          ? sortedFaults[sortedFaults.length - 1]?.completed_time
+          : row.last_fault_time;
 
       const summary = `${assigned}/${finished}`;
       const percent =
@@ -197,16 +269,25 @@ export default function Analysis() {
           new Date(sortedFaults[i - 1].completed_time);
         if (gap > maxGapMs) maxGapMs = gap;
       }
-      const maxGapMins = Math.round(maxGapMs / 60000);
-      const maxFaultStr =
-        maxGapMins > 0
-          ? maxGapMins >= 60
-            ? `${Math.floor(maxGapMins / 60)}h ${maxGapMins % 60}m`
-            : `${maxGapMins}m`
-          : "—";
 
-      let avgFaultStr = "—";
-      if (lastFaultUTC && row.vehicle_out_time && finished > 0) {
+      let maxFaultStr = row.max_fault_time || "—";
+      if (sortedFaults.length > 1) {
+        const maxGapMins = Math.round(maxGapMs / 60000);
+        maxFaultStr =
+          maxGapMins > 0
+            ? maxGapMins >= 60
+              ? `${Math.floor(maxGapMins / 60)}h ${maxGapMins % 60}m`
+              : `${maxGapMins}m`
+            : "—";
+      }
+
+      let avgFaultStr = row.avg_fault_time || "—";
+      if (
+        sortedFaults.length > 0 &&
+        lastFaultUTC &&
+        row.vehicle_out_time &&
+        finished > 0
+      ) {
         const avgMins = Math.round(
           (new Date(lastFaultUTC) - new Date(row.vehicle_out_time)) /
             finished /
@@ -218,11 +299,11 @@ export default function Analysis() {
             : `${avgMins}m`;
       }
 
-      return {
+      return rowMembers.map((m) => ({
         date: toSLTDate(row.created_at),
         day: toSLTDay(row.created_at),
         team: teamName,
-        member: memberName,
+        member: m,
         in: toSLT(row.vehicle_in_time),
         out: toSLT(row.vehicle_out_time),
         vehicle: row.vehicle,
@@ -235,7 +316,7 @@ export default function Analysis() {
         lastToIn: diffFormatted(lastFaultUTC, row.vehicle_in_time),
         avgFault: avgFaultStr,
         maxFault: maxFaultStr,
-      };
+      }));
     });
 
     setOverallDetails(rows);
@@ -244,6 +325,7 @@ export default function Analysis() {
 
   // ─────────────────────────────────────────
   // FETCH: DAILY FAULT ANALYSIS
+  // ── FIX: iterate all members in row.members array ──
   // ─────────────────────────────────────────
 
   const fetchDailyData = useCallback(async (month) => {
@@ -267,7 +349,7 @@ export default function Analysis() {
 
     const { data: dfData, error: dfError } = await supabase
       .from("daily_faults")
-      .select("member, total_assigned, created_at");
+      .select("member, total_assigned, total_finished, created_at");
 
     if (dfError) {
       console.error("fetchDailyData daily_faults error:", dfError.message);
@@ -285,27 +367,44 @@ export default function Analysis() {
     const teamMap = {};
 
     filtered.forEach((row) => {
-      const memberName = getMemberName(row.members);
+      // ── FIX: all members in array iterate ──
+      const rowMembers = Array.isArray(row.members)
+        ? row.members
+        : [row.members ?? "Unknown"];
+
       const team = row.team_name ?? "Unknown";
       const dateKey = toSLTDateKey(row.created_at);
-      const assigned = assignedMap[`${memberName}__${dateKey}`] ?? 0;
 
       const faults = Array.isArray(row.faults_time) ? row.faults_time : [];
       const sortedFaults = [...faults].sort(
         (a, b) => new Date(a.completed_time) - new Date(b.completed_time)
       );
-      const finished = sortedFaults.length;
 
-      if (!teamMap[team]) teamMap[team] = [];
+      // ── FIX: one entry per member ──
+      rowMembers.forEach((memberName) => {
+        const mapEntry = assignedMap[`${memberName}__${dateKey}`] ?? {
+          assigned: 0,
+          finished: 0,
+        };
 
-      teamMap[team].push({
-        date: toSLTDate(row.created_at),
-        member: memberName,
-        entries: sortedFaults.map((f, idx) => ({
-          time: toSLT(f.completed_time),
-          value: `${assigned}/${f.fault_no ?? idx + 1}`,
-        })),
-        summary: `${assigned}/${finished}`,
+        const assigned = mapEntry.assigned;
+        const finished =
+          faults.length > 0 ? faults.length : mapEntry.finished;
+
+        if (!teamMap[team]) teamMap[team] = [];
+
+        teamMap[team].push({
+          date: toSLTDate(row.created_at),
+          member: memberName,
+          entries:
+            sortedFaults.length > 0
+              ? sortedFaults.map((f, idx) => ({
+                  time: toSLT(f.completed_time),
+                  value: `${assigned}/${f.fault_no ?? idx + 1}`,
+                }))
+              : [{ time: "—", value: `${assigned}/${finished}` }],
+          summary: `${assigned}/${finished}`,
+        });
       });
     });
 
@@ -318,7 +417,7 @@ export default function Analysis() {
   }, []);
 
   // ─────────────────────────────────────────
-  // FETCH: MONTHLY SUMMARY — NEW TAB
+  // FETCH: MONTHLY SUMMARY
   // ─────────────────────────────────────────
 
   const fetchMonthlySummary = useCallback(async (month) => {
@@ -354,8 +453,7 @@ export default function Analysis() {
 
     const { data: dfData, error: dfError } = await supabase
       .from("daily_faults")
-      .select("member, total_assigned, created_at")
-      .in("member", memberNames);
+      .select("member, total_assigned, total_finished, created_at");
 
     if (dfError) {
       console.error("fetchMonthlySummary daily_faults error:", dfError.message);
@@ -371,17 +469,22 @@ export default function Analysis() {
     const fcRows = fcError ? [] : (fcData ?? []);
     const assignedMap = buildAssignedMap(fcRows, dfData ?? []);
 
-    // Group by member — aggregate all days
     const memberMap = {};
 
     filtered.forEach((row) => {
       const memberName = getMemberName(row.members);
       const teamName = row.team_name ?? "—";
       const dateKey = toSLTDateKey(row.created_at);
-      const assigned = assignedMap[`${memberName}__${dateKey}`] ?? 0;
+      const mapEntry = assignedMap[`${memberName}__${dateKey}`] ?? {
+        assigned: 0,
+        finished: 0,
+      };
 
+      const assigned = mapEntry.assigned;
       const faults = Array.isArray(row.faults_time) ? row.faults_time : [];
-      const finished = faults.length;
+      const finished =
+        faults.length > 0 ? faults.length : mapEntry.finished;
+
       const sortedFaults = [...faults].sort(
         (a, b) => new Date(a.completed_time) - new Date(b.completed_time)
       );
@@ -390,23 +493,19 @@ export default function Analysis() {
       const lastFaultUTC =
         sortedFaults[sortedFaults.length - 1]?.completed_time ?? null;
 
-      // day % for best/worst
       const dayPercent =
         assigned > 0 ? Math.round((finished / assigned) * 100) : 0;
 
-      // out→1st in minutes
       const outToFirstMins =
         firstFaultUTC && row.vehicle_out_time
           ? (new Date(firstFaultUTC) - new Date(row.vehicle_out_time)) / 60000
           : null;
 
-      // last→in in minutes
       const lastToInMins =
         lastFaultUTC && row.vehicle_in_time
           ? (new Date(row.vehicle_in_time) - new Date(lastFaultUTC)) / 60000
           : null;
 
-      // avg/fault in minutes for this day
       const avgFaultMins =
         lastFaultUTC && row.vehicle_out_time && finished > 0
           ? (new Date(lastFaultUTC) - new Date(row.vehicle_out_time)) /
@@ -414,7 +513,6 @@ export default function Analysis() {
             60000
           : null;
 
-      // max gap for this day
       let maxGapMs = 0;
       for (let i = 1; i < sortedFaults.length; i++) {
         const gap =
@@ -444,21 +542,17 @@ export default function Analysis() {
       m.days.add(dateKey);
       m.totalAssigned += assigned;
       m.totalFinished += finished;
-
       if (dayPercent > m.bestDayPercent) m.bestDayPercent = dayPercent;
       if (dayPercent < m.worstDayPercent) m.worstDayPercent = dayPercent;
-
       if (outToFirstMins !== null && outToFirstMins >= 0)
         m.outToFirstMinsArr.push(outToFirstMins);
       if (lastToInMins !== null && lastToInMins >= 0)
         m.lastToInMinsArr.push(lastToInMins);
       if (avgFaultMins !== null && avgFaultMins >= 0)
         m.avgFaultMinsArr.push(avgFaultMins);
-      if (maxGapMins !== null)
-        m.maxGapMinsArr.push(maxGapMins);
+      if (maxGapMins !== null) m.maxGapMinsArr.push(maxGapMins);
     });
 
-    // Build final rows
     const avg = (arr) =>
       arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
 
@@ -469,11 +563,8 @@ export default function Analysis() {
           m.totalAssigned > 0
             ? Math.round((m.totalFinished / m.totalAssigned) * 100)
             : 0;
-
         const maxEver =
-          m.maxGapMinsArr.length > 0
-            ? Math.max(...m.maxGapMinsArr)
-            : null;
+          m.maxGapMinsArr.length > 0 ? Math.max(...m.maxGapMinsArr) : null;
 
         return {
           member: m.member,
@@ -483,8 +574,7 @@ export default function Analysis() {
           totalFinished: m.totalFinished,
           overallPercent,
           bestDayPercent: m.bestDayPercent,
-          worstDayPercent:
-            m.worstDayPercent === 100 ? 0 : m.worstDayPercent,
+          worstDayPercent: m.worstDayPercent === 100 ? 0 : m.worstDayPercent,
           avgOutToFirst: minsToFormatted(avg(m.outToFirstMinsArr)),
           avgLastToIn: minsToFormatted(avg(m.lastToInMinsArr)),
           avgFault: minsToFormatted(avg(m.avgFaultMinsArr)),
@@ -510,6 +600,18 @@ export default function Analysis() {
         .select("member_name")
         .order("member_name");
       if (!mError) setMembersList(mData.map((m) => m.member_name));
+
+      const { data: tData, error: tError } = await supabase
+        .from("teams")
+        .select("team_name")
+        .order("team_name");
+      if (!tError) setTeamsList(tData.map((t) => t.team_name));
+
+      const { data: vData, error: vError } = await supabase
+        .from("vehicles")
+        .select("vehicle_number")
+        .order("vehicle_number");
+      if (!vError) setVehiclesList(vData.map((v) => v.vehicle_number));
 
       const { data: fwData, error: fwError } = await supabase
         .from("field_work")
@@ -563,6 +665,144 @@ export default function Analysis() {
     if (tab === "monthly") fetchMonthlySummary(selectedMonth);
   };
 
+  const openModal = () => {
+    setForm({
+      date: new Date().toISOString().split("T")[0],
+      team: "",
+      member: [],
+      vehicle: "",
+      vehicleOutTime: "",
+      vehicleInTime: "",
+      totalAssigned: "",
+      totalFinished: "",
+      firstFaultTime: "",
+      lastFaultTime: "",
+      avgFaultTime: "",
+      maxFaultTime: "",
+    });
+    setModalError("");
+    setModalSuccess("");
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setModalError("");
+    setModalSuccess("");
+  };
+
+  const handleFormChange = (e) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async () => {
+    setModalError("");
+    setModalSuccess("");
+
+    if (
+      !form.date ||
+      !form.team ||
+      form.member.length === 0 ||
+      !form.vehicle ||
+      !form.vehicleOutTime ||
+      !form.vehicleInTime ||
+      !form.totalAssigned ||
+      form.totalFinished === ""
+    ) {
+      setModalError("All fields are required.");
+      return;
+    }
+
+    const assigned = parseInt(form.totalAssigned);
+    const finished = parseInt(form.totalFinished);
+
+    if (assigned < 0 || finished < 0) {
+      setModalError("Assigned and Finished cannot be negative.");
+      return;
+    }
+
+    if (finished > assigned) {
+      setModalError("Finished cannot be more than Assigned.");
+      return;
+    }
+
+    setSubmitting(true);
+
+    const vehicleOutUTC = sltToUtc(form.date, form.vehicleOutTime);
+    const vehicleInUTC = sltToUtc(form.date, form.vehicleInTime);
+    const createdAtUTC = vehicleOutUTC;
+    const firstFaultUTC = sltToUtc(form.date, form.firstFaultTime);
+    const lastFaultUTC = sltToUtc(form.date, form.lastFaultTime);
+
+    // Insert field_work — members as array
+    const { error: fwError } = await supabase.from("field_work").insert({
+      vehicle: form.vehicle,
+      members: form.member,
+      team_name: form.team,
+      vehicle_out_time: vehicleOutUTC,
+      vehicle_in_time: vehicleInUTC,
+      faults_time: [],
+      total_faults: finished,
+      status: "Vehicle In",
+      completed_time: vehicleInUTC,
+      finish_time: vehicleInUTC,
+      created_at: createdAtUTC,
+      first_fault_time: firstFaultUTC,
+      last_fault_time: lastFaultUTC,
+      avg_fault_time: form.avgFaultTime,
+      max_fault_time: form.maxFaultTime,
+    });
+
+    if (fwError) {
+      console.error("field_work insert error:", fwError.message);
+      setModalError(`Error saving field work: ${fwError.message}`);
+      setSubmitting(false);
+      return;
+    }
+
+    // ── FIX: insert daily_faults per member — not array ──
+    for (const memberName of form.member) {
+      const { error: dfError } = await supabase.from("daily_faults").insert({
+        team: form.team,
+        member: memberName,
+        total_assigned: assigned,
+        total_finished: finished,
+        created_at: createdAtUTC,
+      });
+
+      if (dfError) {
+        console.error("daily_faults insert error:", dfError.message);
+        setModalError(`Error saving daily faults: ${dfError.message}`);
+        setSubmitting(false);
+        return;
+      }
+    }
+
+    setSubmitting(false);
+    setModalSuccess("Entry saved successfully!");
+
+    const entryMonth = new Date(createdAtUTC).toLocaleDateString("en-GB", {
+      timeZone: "Asia/Colombo",
+      month: "long",
+      year: "numeric",
+    });
+
+    if (!months.includes(entryMonth)) {
+      setMonths((prev) => [...prev, entryMonth].sort());
+    }
+
+    setSelectedMonth(entryMonth);
+
+    setTimeout(() => {
+      closeModal();
+      if (activeTab === "overall")
+        fetchOverallData(entryMonth, selectedMember);
+      if (activeTab === "daily") fetchDailyData(entryMonth);
+      if (activeTab === "monthly") fetchMonthlySummary(entryMonth);
+    }, 1200);
+  };
+
   // ─────────────────────────────────────────
   // HELPERS
   // ─────────────────────────────────────────
@@ -612,7 +852,7 @@ export default function Analysis() {
         </button>
       </div>
 
-      {/* ── OVERALL DETAIL TAB ── */}
+      {/* ── OVERALL DETAIL ── */}
       {activeTab === "overall" && (
         <>
           <div className="top-filters">
@@ -627,6 +867,9 @@ export default function Analysis() {
                 <option key={m}>{m}</option>
               ))}
             </select>
+            <button className="add-entry-btn" onClick={openModal}>
+              + Add Entry
+            </button>
           </div>
 
           <div className="analysis-card">
@@ -652,14 +895,16 @@ export default function Analysis() {
                       <th>%</th>
                       <th>OUT → 1ST</th>
                       <th>LAST → IN</th>
-                      <th>AVG/FAULT</th>
+                      <th>AVG / FAULT</th>
                       <th>MAXIMUM TIME TAKEN FOR A FAULT</th>
                     </tr>
                   </thead>
                   <tbody>
                     {overallDetails.length === 0 ? (
                       <tr>
-                        <td colSpan="16" className="empty-cell">No Data</td>
+                        <td colSpan="16" className="empty-cell">
+                          No Data
+                        </td>
                       </tr>
                     ) : (
                       overallDetails.map((item, index) => (
@@ -693,7 +938,7 @@ export default function Analysis() {
         </>
       )}
 
-      {/* ── DAILY FAULT ANALYSIS TAB ── */}
+      {/* ── DAILY FAULT ANALYSIS ── */}
       {activeTab === "daily" && (
         <>
           <div className="top-filters">
@@ -718,7 +963,7 @@ export default function Analysis() {
                           <th>DATE</th>
                           <th>MEMBER</th>
                           <th>TIME</th>
-                          <th>ULT/ATT</th>
+                          <th>ULT / ATT</th>
                           <th>SUMMARY</th>
                           <th>COMPLETION %</th>
                         </tr>
@@ -726,7 +971,9 @@ export default function Analysis() {
                       <tbody>
                         {team.rows.length === 0 ? (
                           <tr>
-                            <td colSpan="6" className="empty-cell">No Data</td>
+                            <td colSpan="6" className="empty-cell">
+                              No Data
+                            </td>
                           </tr>
                         ) : (
                           team.rows.map((group, groupIndex) => {
@@ -769,7 +1016,7 @@ export default function Analysis() {
         </>
       )}
 
-      {/* ── MONTHLY SUMMARY TAB — NEW ── */}
+      {/* ── MONTHLY SUMMARY ── */}
       {activeTab === "monthly" && (
         <>
           <div className="top-filters">
@@ -806,7 +1053,9 @@ export default function Analysis() {
                   <tbody>
                     {monthlySummary.length === 0 ? (
                       <tr>
-                        <td colSpan="12" className="empty-cell">No Data</td>
+                        <td colSpan="12" className="empty-cell">
+                          No Data
+                        </td>
                       </tr>
                     ) : (
                       monthlySummary.map((item, index) => (
@@ -819,9 +1068,7 @@ export default function Analysis() {
                           <td className={getColorClass(item.overallPercent)}>
                             {item.overallPercent}%
                           </td>
-                          <td className="green">
-                            {item.bestDayPercent}%
-                          </td>
+                          <td className="green">{item.bestDayPercent}%</td>
                           <td className={getColorClass(item.worstDayPercent)}>
                             {item.worstDayPercent}%
                           </td>
@@ -839,6 +1086,186 @@ export default function Analysis() {
           </div>
         </>
       )}
+
+      {/* ── MODAL ── */}
+      {showModal && (
+        <div className="modal-overlay" onClick={closeModal}>
+          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+            <h2>Add Field Work Entry</h2>
+
+            <div className="modal-grid">
+
+              <div className="modal-field">
+                <label>Date</label>
+                <input
+                  type="date"
+                  name="date"
+                  value={form.date}
+                  onChange={handleFormChange}
+                />
+              </div>
+
+              <div className="modal-field">
+                <label>Team</label>
+                <select
+                  name="team"
+                  value={form.team}
+                  onChange={handleFormChange}
+                >
+                  <option value="">Select Team</option>
+                  {teamsList.map((t) => (
+                    <option key={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="modal-field full-width">
+                <label>Member</label>
+                <Select
+                  isMulti
+                  classNamePrefix="react-select"
+                  options={membersList.map((m) => ({
+                    value: m,
+                    label: m,
+                  }))}
+                  value={form.member.map((m) => ({
+                    value: m,
+                    label: m,
+                  }))}
+                  onChange={(selected) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      member: selected ? selected.map((s) => s.value) : [],
+                    }))
+                  }
+                />
+              </div>
+
+              <div className="modal-field">
+                <label>Vehicle</label>
+                <select
+                  name="vehicle"
+                  value={form.vehicle}
+                  onChange={handleFormChange}
+                >
+                  <option value="">Select Vehicle</option>
+                  {vehiclesList.map((v) => (
+                    <option key={v}>{v}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="modal-field">
+                <label>Vehicle Out Time (SLT)</label>
+                <input
+                  type="time"
+                  name="vehicleOutTime"
+                  value={form.vehicleOutTime}
+                  onChange={handleFormChange}
+                />
+              </div>
+
+              <div className="modal-field">
+                <label>Vehicle In Time (SLT)</label>
+                <input
+                  type="time"
+                  name="vehicleInTime"
+                  value={form.vehicleInTime}
+                  onChange={handleFormChange}
+                />
+              </div>
+
+              <div className="modal-field">
+                <label>Total Assigned</label>
+                <input
+                  type="number"
+                  name="totalAssigned"
+                  placeholder="10"
+                  min="0"
+                  value={form.totalAssigned}
+                  onChange={handleFormChange}
+                />
+              </div>
+
+              <div className="modal-field">
+                <label>Total Finished</label>
+                <input
+                  type="number"
+                  name="totalFinished"
+                  placeholder="8"
+                  min="0"
+                  value={form.totalFinished}
+                  onChange={handleFormChange}
+                />
+              </div>
+
+              <div className="modal-field">
+                <label>1st Fault Time (SLT)</label>
+                <input
+                  type="time"
+                  name="firstFaultTime"
+                  value={form.firstFaultTime}
+                  onChange={handleFormChange}
+                />
+              </div>
+
+              <div className="modal-field">
+                <label>Last Fault Time (SLT)</label>
+                <input
+                  type="time"
+                  name="lastFaultTime"
+                  value={form.lastFaultTime}
+                  onChange={handleFormChange}
+                />
+              </div>
+
+              <div className="modal-field">
+                <label>Avg / Fault</label>
+                <input
+                  type="text"
+                  name="avgFaultTime"
+                  placeholder="30m"
+                  value={form.avgFaultTime}
+                  onChange={handleFormChange}
+                />
+              </div>
+
+              <div className="modal-field">
+                <label>Max Fault Time</label>
+                <input
+                  type="text"
+                  name="maxFaultTime"
+                  placeholder="1h 30m"
+                  value={form.maxFaultTime}
+                  onChange={handleFormChange}
+                />
+              </div>
+
+            </div>
+
+            {modalError && (
+              <div className="modal-error">{modalError}</div>
+            )}
+            {modalSuccess && (
+              <div className="modal-success">{modalSuccess}</div>
+            )}
+
+            <div className="modal-actions">
+              <button className="modal-cancel" onClick={closeModal}>
+                Cancel
+              </button>
+              <button
+                className="modal-submit"
+                onClick={handleSubmit}
+                disabled={submitting}
+              >
+                {submitting ? "Saving..." : "Save Entry"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
