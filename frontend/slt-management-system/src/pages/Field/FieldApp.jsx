@@ -186,6 +186,74 @@ useEffect(() => {
   }, []);
 
   /* =========================
+     RESTORE ACTIVE WORK
+  ========================= */
+
+  useEffect(() => {
+
+    const loadActiveWork =
+      async () => {
+
+        const activeWorkId =
+          localStorage.getItem(
+            "activeWorkId"
+          );
+
+        if (!activeWorkId) return;
+
+        const { data, error } =
+          await supabase
+            .from("field_work")
+            .select("*")
+            .eq("id", activeWorkId)
+            .single();
+
+        if (error || !data)
+          return;
+
+        if (
+          data.status === "Vehicle In"
+        ) {
+
+          localStorage.removeItem(
+            "activeWorkId"
+          );
+
+          return;
+        }
+
+        if (data.team_name) {
+
+          localStorage.setItem(
+            "selectedTeam",
+            data.team_name
+          );
+
+        }
+
+        setWorkId(data.id);
+
+        setVehicleInput(
+          data.vehicle || ""
+        );
+
+        setSelectedMembers(
+          data.members || []
+        );
+
+        setStarted(true);
+
+        setFaultCount(
+          (data.total_faults || 0) + 1
+        );
+
+      };
+
+    loadActiveWork();
+
+  }, []);
+
+  /* =========================
      FILTERS
   ========================= */
 
@@ -245,6 +313,20 @@ useEffect(() => {
 
   const handleSubmit = async () => {
 
+    const activeWorkId =
+      localStorage.getItem(
+        "activeWorkId"
+      );
+
+    if (activeWorkId) {
+
+      alert(
+        "Active work already exists"
+      );
+
+      return;
+    }
+
     if (
       !vehicleInput ||
       selectedMembers.length === 0
@@ -296,6 +378,11 @@ useEffect(() => {
     }
 
     setWorkId(data.id);
+
+    localStorage.setItem(
+      "activeWorkId",
+      data.id
+    );
 
     showEntryPopup(
       "Vehicle Out Entry Added"
@@ -439,6 +526,10 @@ const handleNext = async () => {
 
       return;
     }
+
+    localStorage.removeItem(
+      "activeWorkId"
+    );
 
     showEntryPopup(
       "Vehicle In Saved Successfully"
