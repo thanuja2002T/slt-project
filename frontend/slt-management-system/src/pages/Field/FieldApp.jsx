@@ -194,12 +194,43 @@ useEffect(() => {
     const loadActiveWork =
       async () => {
 
-        const activeWorkId =
+        const raw =
           localStorage.getItem(
             "activeWorkId"
           );
 
-        if (!activeWorkId) return;
+        if (!raw) return;
+
+        let activeWorkId;
+
+        try {
+
+          const parsed =
+            JSON.parse(raw);
+
+          if (
+            new Date().getTime() >
+            parsed.expiry
+          ) {
+
+            localStorage.removeItem(
+              "activeWorkId"
+            );
+
+            return;
+          }
+
+          activeWorkId = parsed.id;
+
+        } catch {
+
+          localStorage.removeItem(
+            "activeWorkId"
+          );
+
+          return;
+
+        }
 
         const { data, error } =
           await supabase
@@ -313,18 +344,45 @@ useEffect(() => {
 
   const handleSubmit = async () => {
 
-    const activeWorkId =
+    const raw =
       localStorage.getItem(
         "activeWorkId"
       );
 
-    if (activeWorkId) {
+    if (raw) {
 
-      alert(
-        "Active work already exists"
-      );
+      try {
 
-      return;
+        const parsed =
+          JSON.parse(raw);
+
+        if (
+          new Date().getTime() <=
+          parsed.expiry
+        ) {
+
+          alert(
+            "Active work already exists"
+          );
+
+          return;
+
+        } else {
+
+          localStorage.removeItem(
+            "activeWorkId"
+          );
+
+        }
+
+      } catch {
+
+        localStorage.removeItem(
+          "activeWorkId"
+        );
+
+      }
+
     }
 
     if (
@@ -379,9 +437,26 @@ useEffect(() => {
 
     setWorkId(data.id);
 
+    const now = new Date();
+
+    const midnight = new Date(
+      now.toLocaleString(
+        "en-US",
+        { timeZone: "Asia/Colombo" }
+      )
+    );
+
+    midnight.setHours(23, 59, 59, 999);
+
+    const expiry =
+      midnight.getTime();
+
     localStorage.setItem(
       "activeWorkId",
-      data.id
+      JSON.stringify({
+        id: data.id,
+        expiry
+      })
     );
 
     showEntryPopup(
