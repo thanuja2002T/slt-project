@@ -1,7 +1,47 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "../../../lib/supabase.js";
 import Select from "react-select";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  Cell,
+} from "recharts";
 import "./FaultAnalysis.css";
+
+// ─────────────────────────────────────────
+// CUSTOM TOOLTIP — outside component (fixes "created during render" error)
+// ─────────────────────────────────────────
+
+const CustomTooltip = ({ active, payload, unit }) => {
+  if (!active || !payload || payload.length === 0) return null;
+  return (
+    <div className="chart-tooltip">
+      <p className="chart-tooltip-label">
+        {payload[0]?.payload?.label}
+      </p>
+      <p className="chart-tooltip-date">
+        {payload[0]?.payload?.date}
+      </p>
+      {payload.map((p, i) => (
+        <p key={i} style={{ color: p.color }}>
+          {p.name}: {p.value}{unit || ""}
+        </p>
+      ))}
+    </div>
+  );
+};
+
+const TooltipPercent = (props) => <CustomTooltip {...props} unit="%" />;
+const TooltipMins   = (props) => <CustomTooltip {...props} unit=" mins" />;
+const TooltipPlain  = (props) => <CustomTooltip {...props} unit="" />;
+
+// ─────────────────────────────────────────
 
 export default function Analysis() {
   const [activeTab, setActiveTab] = useState("overall");
@@ -118,9 +158,17 @@ export default function Analysis() {
     return new Date(`${date}T${time}:00+05:30`).toISOString();
   };
 
+  const parseMinutes = (str) => {
+    if (!str || str === "—") return 0;
+    const hMatch = str.match(/(\d+)h/);
+    const mMatch = str.match(/(\d+)m/);
+    const h = hMatch ? parseInt(hMatch[1]) : 0;
+    const m = mMatch ? parseInt(mMatch[1]) : 0;
+    return h * 60 + m;
+  };
+
   // ─────────────────────────────────────────
   // HELPER: build assigned + finished map
-  // ── console.logs removed ──
   // ─────────────────────────────────────────
 
   const buildAssignedMap = (fcData, dfData) => {
@@ -128,7 +176,6 @@ export default function Analysis() {
 
     dfData.forEach((df) => {
       const dateKey = toSLTDateKey(df.created_at);
-
       let members = [];
       if (Array.isArray(df.member)) {
         members = df.member;
@@ -145,7 +192,6 @@ export default function Analysis() {
           members = [trimmed];
         }
       }
-
       members.forEach((member) => {
         const key = `${member.trim()}__${dateKey}`;
         map[key] = {
@@ -311,7 +357,10 @@ export default function Analysis() {
         firstFault: toSLT(firstFaultUTC),
         lastFault: toSLT(lastFaultUTC),
         summary,
+        assigned,
+        finished,
         percent,
+        percentNum: assigned > 0 ? Math.round((finished / assigned) * 100) : 0,
         outToFirst: diffFormatted(row.vehicle_out_time, firstFaultUTC),
         lastToIn: diffFormatted(lastFaultUTC, row.vehicle_in_time),
         avgFault: avgFaultStr,
@@ -325,7 +374,6 @@ export default function Analysis() {
 
   // ─────────────────────────────────────────
   // FETCH: DAILY FAULT ANALYSIS
-  // ── FIX: iterate all members in row.members array ──
   // ─────────────────────────────────────────
 
   const fetchDailyData = useCallback(async (month) => {
@@ -367,7 +415,6 @@ export default function Analysis() {
     const teamMap = {};
 
     filtered.forEach((row) => {
-      // ── FIX: all members in array iterate ──
       const rowMembers = Array.isArray(row.members)
         ? row.members
         : [row.members ?? "Unknown"];
@@ -380,7 +427,6 @@ export default function Analysis() {
         (a, b) => new Date(a.completed_time) - new Date(b.completed_time)
       );
 
-      // ── FIX: one entry per member ──
       rowMembers.forEach((memberName) => {
         const mapEntry = assignedMap[`${memberName}__${dateKey}`] ?? {
           assigned: 0,
@@ -730,28 +776,27 @@ export default function Analysis() {
     setSubmitting(true);
 
     const vehicleOutUTC = sltToUtc(form.date, form.vehicleOutTime);
-    const vehicleInUTC = sltToUtc(form.date, form.vehicleInTime);
-    const createdAtUTC = vehicleOutUTC;
+    const vehicleInUTC  = sltToUtc(form.date, form.vehicleInTime);
+    const createdAtUTC  = vehicleOutUTC;
     const firstFaultUTC = sltToUtc(form.date, form.firstFaultTime);
-    const lastFaultUTC = sltToUtc(form.date, form.lastFaultTime);
+    const lastFaultUTC  = sltToUtc(form.date, form.lastFaultTime);
 
-    // Insert field_work — members as array
     const { error: fwError } = await supabase.from("field_work").insert({
-      vehicle: form.vehicle,
-      members: form.member,
-      team_name: form.team,
+      vehicle:          form.vehicle,
+      members:          form.member,
+      team_name:        form.team,
       vehicle_out_time: vehicleOutUTC,
-      vehicle_in_time: vehicleInUTC,
-      faults_time: [],
-      total_faults: finished,
-      status: "Vehicle In",
-      completed_time: vehicleInUTC,
-      finish_time: vehicleInUTC,
-      created_at: createdAtUTC,
+      vehicle_in_time:  vehicleInUTC,
+      faults_time:      [],
+      total_faults:     finished,
+      status:           "Vehicle In",
+      completed_time:   vehicleInUTC,
+      finish_time:      vehicleInUTC,
+      created_at:       createdAtUTC,
       first_fault_time: firstFaultUTC,
-      last_fault_time: lastFaultUTC,
-      avg_fault_time: form.avgFaultTime,
-      max_fault_time: form.maxFaultTime,
+      last_fault_time:  lastFaultUTC,
+      avg_fault_time:   form.avgFaultTime,
+      max_fault_time:   form.maxFaultTime,
     });
 
     if (fwError) {
@@ -761,14 +806,13 @@ export default function Analysis() {
       return;
     }
 
-    // ── FIX: insert daily_faults per member — not array ──
     for (const memberName of form.member) {
       const { error: dfError } = await supabase.from("daily_faults").insert({
-        team: form.team,
-        member: memberName,
-        total_assigned: assigned,
-        total_finished: finished,
-        created_at: createdAtUTC,
+        team:            form.team,
+        member:          memberName,
+        total_assigned:  assigned,
+        total_finished:  finished,
+        created_at:      createdAtUTC,
       });
 
       if (dfError) {
@@ -796,9 +840,8 @@ export default function Analysis() {
 
     setTimeout(() => {
       closeModal();
-      if (activeTab === "overall")
-        fetchOverallData(entryMonth, selectedMember);
-      if (activeTab === "daily") fetchDailyData(entryMonth);
+      if (activeTab === "overall") fetchOverallData(entryMonth, selectedMember);
+      if (activeTab === "daily")   fetchDailyData(entryMonth);
       if (activeTab === "monthly") fetchMonthlySummary(entryMonth);
     }, 1200);
   };
@@ -815,9 +858,50 @@ export default function Analysis() {
 
   const getColorClass = (percent) => {
     if (percent >= 100) return "green";
-    if (percent >= 70) return "yellow";
+    if (percent >= 70)  return "yellow";
     return "red";
   };
+
+  const getPercentColor = (percent) => {
+    if (percent >= 100) return "#22c55e";
+    if (percent >= 70)  return "#facc15";
+    return "#ef4444";
+  };
+
+  const tickFormatter = (value) => {
+    if (typeof value === "string" && value.length > 10) {
+      return value.slice(0, 10) + "…";
+    }
+    return value;
+  };
+
+  // ── Build chart data ──
+  const chartData = overallDetails.map((item) => ({
+    label:          `${item.team} / ${item.member}`,
+    date:           item.date,
+    member:         item.member,
+    team:           item.team,
+    percentNum:     item.percentNum ?? parseInt(item.percent) ?? 0,
+    assigned:       item.assigned  ?? 0,
+    finished:       item.finished  ?? 0,
+    outToFirstMins: parseMinutes(item.outToFirst),
+    lastToInMins:   parseMinutes(item.lastToIn),
+    avgFaultMins:   parseMinutes(item.avgFault),
+    maxFaultMins:   parseMinutes(item.maxFault),
+  }));
+
+  const barRadius = [4, 4, 0, 0];
+
+  const commonXAxis = (
+    <XAxis
+      dataKey="member"
+      tick={{ fill: "#94a3b8", fontSize: 11 }}
+      angle={-35}
+      textAnchor="end"
+      interval={0}
+      tickFormatter={tickFormatter}
+    />
+  );
 
   // ─────────────────────────────────────────
   // JSX
@@ -872,6 +956,7 @@ export default function Analysis() {
             </button>
           </div>
 
+          {/* TABLE */}
           <div className="analysis-card">
             <h2>FAULT ANALYSIS BY SERVICE NUMBER (Every Works)</h2>
             {loading ? (
@@ -902,9 +987,7 @@ export default function Analysis() {
                   <tbody>
                     {overallDetails.length === 0 ? (
                       <tr>
-                        <td colSpan="16" className="empty-cell">
-                          No Data
-                        </td>
+                        <td colSpan="16" className="empty-cell">No Data</td>
                       </tr>
                     ) : (
                       overallDetails.map((item, index) => (
@@ -935,6 +1018,108 @@ export default function Analysis() {
               </div>
             )}
           </div>
+
+          {/* ── BAR CHARTS ── */}
+          {!loading && chartData.length > 0 && (
+            <div className="charts-section">
+
+              <h2 className="charts-title">📊 Bar Chart Comparison</h2>
+
+              <div className="charts-grid">
+
+                {/* CHART 1 — Completion % */}
+                <div className="chart-card">
+                  <h3>Completion %</h3>
+                  <ResponsiveContainer width="100%" height={260}>
+                    <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 60 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                      {commonXAxis}
+                      <YAxis tick={{ fill: "#94a3b8", fontSize: 11 }} domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
+                      <Tooltip content={TooltipPercent} />
+                      <Bar dataKey="percentNum" name="Completion %" radius={barRadius}>
+                        {chartData.map((entry, i) => (
+                          <Cell key={i} fill={getPercentColor(entry.percentNum)} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* CHART 2 — Assigned vs Finished */}
+                <div className="chart-card">
+                  <h3>Assigned vs Finished</h3>
+                  <ResponsiveContainer width="100%" height={260}>
+                    <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 60 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                      {commonXAxis}
+                      <YAxis tick={{ fill: "#94a3b8", fontSize: 11 }} />
+                      <Tooltip content={TooltipPlain} />
+                      <Legend wrapperStyle={{ color: "#94a3b8", fontSize: 12 }} />
+                      <Bar dataKey="assigned" name="Assigned" fill="#3b82f6" radius={barRadius} />
+                      <Bar dataKey="finished" name="Finished" fill="#22c55e" radius={barRadius} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* CHART 3 — OUT → 1ST FAULT */}
+                <div className="chart-card">
+                  <h3>Out → 1st Fault (mins)</h3>
+                  <ResponsiveContainer width="100%" height={260}>
+                    <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 60 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                      {commonXAxis}
+                      <YAxis tick={{ fill: "#94a3b8", fontSize: 11 }} tickFormatter={(v) => `${v}m`} />
+                      <Tooltip content={TooltipMins} />
+                      <Bar dataKey="outToFirstMins" name="Out → 1st" fill="#facc15" radius={barRadius} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* CHART 4 — LAST → IN */}
+                <div className="chart-card">
+                  <h3>Last Fault → In (mins)</h3>
+                  <ResponsiveContainer width="100%" height={260}>
+                    <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 60 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                      {commonXAxis}
+                      <YAxis tick={{ fill: "#94a3b8", fontSize: 11 }} tickFormatter={(v) => `${v}m`} />
+                      <Tooltip content={TooltipMins} />
+                      <Bar dataKey="lastToInMins" name="Last → In" fill="#fb923c" radius={barRadius} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* CHART 5 — AVG / FAULT */}
+                <div className="chart-card">
+                  <h3>Avg / Fault (mins)</h3>
+                  <ResponsiveContainer width="100%" height={260}>
+                    <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 60 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                      {commonXAxis}
+                      <YAxis tick={{ fill: "#94a3b8", fontSize: 11 }} tickFormatter={(v) => `${v}m`} />
+                      <Tooltip content={TooltipMins} />
+                      <Bar dataKey="avgFaultMins" name="Avg / Fault" fill="#ff3ef7" radius={barRadius} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* CHART 6 — MAX FAULT TIME */}
+                <div className="chart-card">
+                  <h3>Max Fault Time (mins)</h3>
+                  <ResponsiveContainer width="100%" height={260}>
+                    <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 60 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                      {commonXAxis}
+                      <YAxis tick={{ fill: "#94a3b8", fontSize: 11 }} tickFormatter={(v) => `${v}m`} />
+                      <Tooltip content={TooltipMins} />
+                      <Bar dataKey="maxFaultMins" name="Max Fault" fill="#00d4ff" radius={barRadius} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
+              </div>
+            </div>
+          )}
         </>
       )}
 
@@ -971,9 +1156,7 @@ export default function Analysis() {
                       <tbody>
                         {team.rows.length === 0 ? (
                           <tr>
-                            <td colSpan="6" className="empty-cell">
-                              No Data
-                            </td>
+                            <td colSpan="6" className="empty-cell">No Data</td>
                           </tr>
                         ) : (
                           team.rows.map((group, groupIndex) => {
@@ -981,26 +1164,18 @@ export default function Analysis() {
                             return group.entries.map((entry, entryIndex) => (
                               <tr key={`${groupIndex}-${entryIndex}`}>
                                 {entryIndex === 0 && (
-                                  <td rowSpan={group.entries.length}>
-                                    {group.date}
-                                  </td>
+                                  <td rowSpan={group.entries.length}>{group.date}</td>
                                 )}
                                 {entryIndex === 0 && (
-                                  <td rowSpan={group.entries.length}>
-                                    {group.member}
-                                  </td>
+                                  <td rowSpan={group.entries.length}>{group.member}</td>
                                 )}
                                 <td>{entry.time}</td>
                                 <td>{entry.value}</td>
                                 {entryIndex === group.entries.length - 1 && (
-                                  <td className="summary-cell">
-                                    {group.summary}
-                                  </td>
+                                  <td className="summary-cell">{group.summary}</td>
                                 )}
                                 {entryIndex === group.entries.length - 1 && (
-                                  <td className={getColorClass(percent)}>
-                                    {percent}%
-                                  </td>
+                                  <td className={getColorClass(percent)}>{percent}%</td>
                                 )}
                               </tr>
                             ));
@@ -1053,9 +1228,7 @@ export default function Analysis() {
                   <tbody>
                     {monthlySummary.length === 0 ? (
                       <tr>
-                        <td colSpan="12" className="empty-cell">
-                          No Data
-                        </td>
+                        <td colSpan="12" className="empty-cell">No Data</td>
                       </tr>
                     ) : (
                       monthlySummary.map((item, index) => (
@@ -1097,25 +1270,14 @@ export default function Analysis() {
 
               <div className="modal-field">
                 <label>Date</label>
-                <input
-                  type="date"
-                  name="date"
-                  value={form.date}
-                  onChange={handleFormChange}
-                />
+                <input type="date" name="date" value={form.date} onChange={handleFormChange} />
               </div>
 
               <div className="modal-field">
                 <label>Team</label>
-                <select
-                  name="team"
-                  value={form.team}
-                  onChange={handleFormChange}
-                >
+                <select name="team" value={form.team} onChange={handleFormChange}>
                   <option value="">Select Team</option>
-                  {teamsList.map((t) => (
-                    <option key={t}>{t}</option>
-                  ))}
+                  {teamsList.map((t) => (<option key={t}>{t}</option>))}
                 </select>
               </div>
 
@@ -1124,14 +1286,8 @@ export default function Analysis() {
                 <Select
                   isMulti
                   classNamePrefix="react-select"
-                  options={membersList.map((m) => ({
-                    value: m,
-                    label: m,
-                  }))}
-                  value={form.member.map((m) => ({
-                    value: m,
-                    label: m,
-                  }))}
+                  options={membersList.map((m) => ({ value: m, label: m }))}
+                  value={form.member.map((m) => ({ value: m, label: m }))}
                   onChange={(selected) =>
                     setForm((prev) => ({
                       ...prev,
@@ -1143,122 +1299,60 @@ export default function Analysis() {
 
               <div className="modal-field">
                 <label>Vehicle</label>
-                <select
-                  name="vehicle"
-                  value={form.vehicle}
-                  onChange={handleFormChange}
-                >
+                <select name="vehicle" value={form.vehicle} onChange={handleFormChange}>
                   <option value="">Select Vehicle</option>
-                  {vehiclesList.map((v) => (
-                    <option key={v}>{v}</option>
-                  ))}
+                  {vehiclesList.map((v) => (<option key={v}>{v}</option>))}
                 </select>
               </div>
 
               <div className="modal-field">
                 <label>Vehicle Out Time (SLT)</label>
-                <input
-                  type="time"
-                  name="vehicleOutTime"
-                  value={form.vehicleOutTime}
-                  onChange={handleFormChange}
-                />
+                <input type="time" name="vehicleOutTime" value={form.vehicleOutTime} onChange={handleFormChange} />
               </div>
 
               <div className="modal-field">
                 <label>Vehicle In Time (SLT)</label>
-                <input
-                  type="time"
-                  name="vehicleInTime"
-                  value={form.vehicleInTime}
-                  onChange={handleFormChange}
-                />
+                <input type="time" name="vehicleInTime" value={form.vehicleInTime} onChange={handleFormChange} />
               </div>
 
               <div className="modal-field">
                 <label>Total Assigned</label>
-                <input
-                  type="number"
-                  name="totalAssigned"
-                  placeholder="10"
-                  min="0"
-                  value={form.totalAssigned}
-                  onChange={handleFormChange}
-                />
+                <input type="number" name="totalAssigned" placeholder="10" min="0" value={form.totalAssigned} onChange={handleFormChange} />
               </div>
 
               <div className="modal-field">
                 <label>Total Finished</label>
-                <input
-                  type="number"
-                  name="totalFinished"
-                  placeholder="8"
-                  min="0"
-                  value={form.totalFinished}
-                  onChange={handleFormChange}
-                />
+                <input type="number" name="totalFinished" placeholder="8" min="0" value={form.totalFinished} onChange={handleFormChange} />
               </div>
 
               <div className="modal-field">
                 <label>1st Fault Time (SLT)</label>
-                <input
-                  type="time"
-                  name="firstFaultTime"
-                  value={form.firstFaultTime}
-                  onChange={handleFormChange}
-                />
+                <input type="time" name="firstFaultTime" value={form.firstFaultTime} onChange={handleFormChange} />
               </div>
 
               <div className="modal-field">
                 <label>Last Fault Time (SLT)</label>
-                <input
-                  type="time"
-                  name="lastFaultTime"
-                  value={form.lastFaultTime}
-                  onChange={handleFormChange}
-                />
+                <input type="time" name="lastFaultTime" value={form.lastFaultTime} onChange={handleFormChange} />
               </div>
 
               <div className="modal-field">
                 <label>Avg / Fault</label>
-                <input
-                  type="text"
-                  name="avgFaultTime"
-                  placeholder="30m"
-                  value={form.avgFaultTime}
-                  onChange={handleFormChange}
-                />
+                <input type="text" name="avgFaultTime" placeholder="30m" value={form.avgFaultTime} onChange={handleFormChange} />
               </div>
 
               <div className="modal-field">
                 <label>Max Fault Time</label>
-                <input
-                  type="text"
-                  name="maxFaultTime"
-                  placeholder="1h 30m"
-                  value={form.maxFaultTime}
-                  onChange={handleFormChange}
-                />
+                <input type="text" name="maxFaultTime" placeholder="1h 30m" value={form.maxFaultTime} onChange={handleFormChange} />
               </div>
 
             </div>
 
-            {modalError && (
-              <div className="modal-error">{modalError}</div>
-            )}
-            {modalSuccess && (
-              <div className="modal-success">{modalSuccess}</div>
-            )}
+            {modalError   && <div className="modal-error">{modalError}</div>}
+            {modalSuccess && <div className="modal-success">{modalSuccess}</div>}
 
             <div className="modal-actions">
-              <button className="modal-cancel" onClick={closeModal}>
-                Cancel
-              </button>
-              <button
-                className="modal-submit"
-                onClick={handleSubmit}
-                disabled={submitting}
-              >
+              <button className="modal-cancel" onClick={closeModal}>Cancel</button>
+              <button className="modal-submit" onClick={handleSubmit} disabled={submitting}>
                 {submitting ? "Saving..." : "Save Entry"}
               </button>
             </div>
