@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "../../../lib/supabase.js";
-import Select from "react-select";
 import {
   BarChart,
   Bar,
@@ -15,19 +14,15 @@ import {
 import "./FaultAnalysis.css";
 
 // ─────────────────────────────────────────
-// CUSTOM TOOLTIP — outside component (fixes "created during render" error)
+// CUSTOM TOOLTIP — outside component
 // ─────────────────────────────────────────
 
 const CustomTooltip = ({ active, payload, unit }) => {
   if (!active || !payload || payload.length === 0) return null;
   return (
     <div className="chart-tooltip">
-      <p className="chart-tooltip-label">
-        {payload[0]?.payload?.label}
-      </p>
-      <p className="chart-tooltip-date">
-        {payload[0]?.payload?.date}
-      </p>
+      <p className="chart-tooltip-label">{payload[0]?.payload?.label}</p>
+      <p className="chart-tooltip-date">{payload[0]?.payload?.date}</p>
       {payload.map((p, i) => (
         <p key={i} style={{ color: p.color }}>
           {p.name}: {p.value}{unit || ""}
@@ -38,44 +33,35 @@ const CustomTooltip = ({ active, payload, unit }) => {
 };
 
 const TooltipPercent = (props) => <CustomTooltip {...props} unit="%" />;
-const TooltipMins   = (props) => <CustomTooltip {...props} unit=" mins" />;
-const TooltipPlain  = (props) => <CustomTooltip {...props} unit="" />;
+const TooltipMins    = (props) => <CustomTooltip {...props} unit=" mins" />;
+const TooltipPlain   = (props) => <CustomTooltip {...props} unit="" />;
+
+// Colour palette for member-comparison bars — cycles if more members are picked
+const MEMBER_COLORS = [
+  "#3b82f6", "#22c55e", "#facc15", "#fb923c",
+  "#ff3ef7", "#00d4ff", "#ef4444", "#a78bfa",
+  "#14b8a6", "#f472b6", "#84cc16", "#eab308",
+];
+const colorForIndex = (i) => MEMBER_COLORS[i % MEMBER_COLORS.length];
 
 // ─────────────────────────────────────────
 
 export default function Analysis() {
-  const [activeTab, setActiveTab] = useState("overall");
+  const [activeTab, setActiveTab]         = useState("overall");
+  const [overallView, setOverallView]     = useState("table"); // "table" | "chart"
   const [selectedMonth, setSelectedMonth] = useState("");
   const [selectedMember, setSelectedMember] = useState("All Members");
 
+  // ── Member comparison state ──
+  const [comparisonMode, setComparisonMode] = useState(false);
+  const [selectedMembers, setSelectedMembers] = useState([]); // no cap — pick as many as needed
+
   const [overallDetails, setOverallDetails] = useState([]);
-  const [dailyTeams, setDailyTeams] = useState([]);
+  const [dailyTeams, setDailyTeams]         = useState([]);
   const [monthlySummary, setMonthlySummary] = useState([]);
-  const [months, setMonths] = useState([]);
-  const [membersList, setMembersList] = useState([]);
-  const [teamsList, setTeamsList] = useState([]);
-  const [vehiclesList, setVehiclesList] = useState([]);
-  const [loading, setLoading] = useState(false);
-
-  const [showModal, setShowModal] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [modalError, setModalError] = useState("");
-  const [modalSuccess, setModalSuccess] = useState("");
-
-  const [form, setForm] = useState({
-    date: "",
-    team: "",
-    member: [],
-    vehicle: "",
-    vehicleOutTime: "",
-    vehicleInTime: "",
-    totalAssigned: "",
-    totalFinished: "",
-    firstFaultTime: "",
-    lastFaultTime: "",
-    avgFaultTime: "",
-    maxFaultTime: "",
-  });
+  const [months, setMonths]                 = useState([]);
+  const [membersList, setMembersList]       = useState([]);
+  const [loading, setLoading]               = useState(false);
 
   const mountedRef = useRef(false);
 
@@ -129,6 +115,13 @@ export default function Analysis() {
     });
   };
 
+  // dd/mm/yyyy -> sortable key
+  const dateSortKey = (ddmmyyyy) => {
+    if (!ddmmyyyy || ddmmyyyy === "—") return "";
+    const [d, m, y] = ddmmyyyy.split("/");
+    return `${y}-${m}-${d}`;
+  };
+
   const diffFormatted = (utcStart, utcEnd) => {
     if (!utcStart || !utcEnd) return "—";
     const diffMs = new Date(utcEnd) - new Date(utcStart);
@@ -153,11 +146,6 @@ export default function Analysis() {
     return members ?? "";
   };
 
-  const sltToUtc = (date, time) => {
-    if (!date || !time) return null;
-    return new Date(`${date}T${time}:00+05:30`).toISOString();
-  };
-
   const parseMinutes = (str) => {
     if (!str || str === "—") return 0;
     const hMatch = str.match(/(\d+)h/);
@@ -168,62 +156,35 @@ export default function Analysis() {
   };
 
   // ─────────────────────────────────────────
-  // HELPER: build assigned + finished map
+  // HELPER: build assigned lookup map
   // ─────────────────────────────────────────
 
   const buildAssignedMap = (fcData, dfData) => {
     const map = {};
-
     dfData.forEach((df) => {
-      const dateKey = toSLTDateKey(df.created_at);
-      let members = [];
-      if (Array.isArray(df.member)) {
-        members = df.member;
-      } else if (typeof df.member === "string") {
-        const trimmed = df.member.trim();
-        if (trimmed.startsWith("[")) {
-          try {
-            const parsed = JSON.parse(trimmed);
-            members = Array.isArray(parsed) ? parsed : [trimmed];
-          } catch {
-            members = [trimmed];
-          }
-        } else {
-          members = [trimmed];
-        }
-      }
-      members.forEach((member) => {
-        const key = `${member.trim()}__${dateKey}`;
-        map[key] = {
-          assigned: df.total_assigned ?? 0,
-          finished: df.total_finished ?? 0,
-        };
-      });
+      const key = `${df.member}__${toSLTDateKey(df.created_at)}`;
+      map[key] = df.total_assigned;
     });
-
     fcData.forEach((fc) => {
-      const key = `${fc.member.trim()}__${toSLTDateKey(fc.created_at)}`;
-      if (fc.assigned != null) {
-        if (!map[key]) map[key] = { assigned: 0, finished: 0 };
-        map[key].assigned = fc.assigned;
-      }
+      const key = `${fc.member}__${toSLTDateKey(fc.created_at)}`;
+      if (fc.assigned != null) map[key] = fc.assigned;
     });
-
     return map;
   };
 
   // ─────────────────────────────────────────
   // FETCH: OVERALL DETAIL
+  // compareMembers: array of member names for comparison mode (overrides `member`)
   // ─────────────────────────────────────────
 
-  const fetchOverallData = useCallback(async (month, member) => {
+  const fetchOverallData = useCallback(async (month, member, compareMembers = []) => {
     if (!month) return;
     setLoading(true);
 
     const { data: fwData, error: fwError } = await supabase
       .from("field_work")
       .select(
-        "id, vehicle, members, team_name, vehicle_out_time, vehicle_in_time, first_fault_time, last_fault_time, avg_fault_time, max_fault_time, total_faults, faults_time, created_at"
+        "id, vehicle, members, team_name, vehicle_out_time, vehicle_in_time, faults_time, created_at"
       )
       .order("created_at");
 
@@ -237,7 +198,12 @@ export default function Analysis() {
       (row) => toSLTMonthLabel(row.created_at) === month
     );
 
-    if (member !== "All Members") {
+    if (compareMembers && compareMembers.length > 0) {
+      // Comparison mode — keep rows for any of the selected members
+      filtered = filtered.filter((row) =>
+        compareMembers.includes(getMemberName(row.members))
+      );
+    } else if (member !== "All Members") {
       filtered = filtered.filter(
         (row) => getMemberName(row.members) === member
       );
@@ -255,7 +221,8 @@ export default function Analysis() {
 
     const { data: dfData, error: dfError } = await supabase
       .from("daily_faults")
-      .select("member, total_assigned, total_finished, created_at");
+      .select("member, total_assigned, created_at")
+      .in("member", memberNames);
 
     if (dfError) {
       console.error("fetchOverallData daily_faults error:", dfError.message);
@@ -268,45 +235,27 @@ export default function Analysis() {
       .select("member, assigned, created_at")
       .in("member", memberNames);
 
-    const fcRows = fcError ? [] : (fcData ?? []);
+    const fcRows      = fcError ? [] : (fcData ?? []);
     const assignedMap = buildAssignedMap(fcRows, dfData ?? []);
 
-    const rows = filtered.flatMap((row) => {
-      const rowMembers = Array.isArray(row.members)
-        ? row.members
-        : [row.members];
-      const memberName = rowMembers[0];
-      const teamName = row.team_name ?? "—";
-      const dateKey = toSLTDateKey(row.created_at);
+    const rows = filtered.map((row) => {
+      const memberName = getMemberName(row.members);
+      const teamName   = row.team_name ?? "—";
+      const dateKey    = toSLTDateKey(row.created_at);
+      const assigned   = assignedMap[`${memberName}__${dateKey}`] ?? 0;
 
-      const mapEntry = assignedMap[`${memberName}__${dateKey}`] ?? {
-        assigned: 0,
-        finished: 0,
-      };
-
-      const assigned = mapEntry.assigned;
-      const finished = row.total_faults ?? 0;
-      const faults = Array.isArray(row.faults_time) ? row.faults_time : [];
-
+      const faults       = Array.isArray(row.faults_time) ? row.faults_time : [];
+      const finished     = faults.length;
       const sortedFaults = [...faults].sort(
         (a, b) => new Date(a.completed_time) - new Date(b.completed_time)
       );
 
-      const firstFaultUTC =
-        sortedFaults.length > 0
-          ? sortedFaults[0]?.completed_time
-          : row.first_fault_time;
+      const firstFaultUTC = sortedFaults[0]?.completed_time ?? null;
+      const lastFaultUTC  = sortedFaults[sortedFaults.length - 1]?.completed_time ?? null;
 
-      const lastFaultUTC =
-        sortedFaults.length > 0
-          ? sortedFaults[sortedFaults.length - 1]?.completed_time
-          : row.last_fault_time;
-
-      const summary = `${assigned}/${finished}`;
-      const percent =
-        assigned > 0
-          ? Math.round((finished / assigned) * 100) + "%"
-          : "0%";
+      const summary    = `${assigned}/${finished}`;
+      const percentNum = assigned > 0 ? Math.round((finished / assigned) * 100) : 0;
+      const percent    = `${percentNum}%`;
 
       let maxGapMs = 0;
       for (let i = 1; i < sortedFaults.length; i++) {
@@ -315,25 +264,16 @@ export default function Analysis() {
           new Date(sortedFaults[i - 1].completed_time);
         if (gap > maxGapMs) maxGapMs = gap;
       }
+      const maxGapMins = Math.round(maxGapMs / 60000);
+      const maxFaultStr =
+        maxGapMins > 0
+          ? maxGapMins >= 60
+            ? `${Math.floor(maxGapMins / 60)}h ${maxGapMins % 60}m`
+            : `${maxGapMins}m`
+          : "—";
 
-      let maxFaultStr = row.max_fault_time || "—";
-      if (sortedFaults.length > 1) {
-        const maxGapMins = Math.round(maxGapMs / 60000);
-        maxFaultStr =
-          maxGapMins > 0
-            ? maxGapMins >= 60
-              ? `${Math.floor(maxGapMins / 60)}h ${maxGapMins % 60}m`
-              : `${maxGapMins}m`
-            : "—";
-      }
-
-      let avgFaultStr = row.avg_fault_time || "—";
-      if (
-        sortedFaults.length > 0 &&
-        lastFaultUTC &&
-        row.vehicle_out_time &&
-        finished > 0
-      ) {
+      let avgFaultStr = "—";
+      if (lastFaultUTC && row.vehicle_out_time && finished > 0) {
         const avgMins = Math.round(
           (new Date(lastFaultUTC) - new Date(row.vehicle_out_time)) /
             finished /
@@ -345,11 +285,14 @@ export default function Analysis() {
             : `${avgMins}m`;
       }
 
-      return rowMembers.map((m) => ({
+      const outToFirst = diffFormatted(row.vehicle_out_time, firstFaultUTC);
+      const lastToIn   = diffFormatted(lastFaultUTC, row.vehicle_in_time);
+
+      return {
         date: toSLTDate(row.created_at),
         day: toSLTDay(row.created_at),
         team: teamName,
-        member: m,
+        member: memberName,
         in: toSLT(row.vehicle_in_time),
         out: toSLT(row.vehicle_out_time),
         vehicle: row.vehicle,
@@ -360,16 +303,17 @@ export default function Analysis() {
         assigned,
         finished,
         percent,
-        percentNum: assigned > 0 ? Math.round((finished / assigned) * 100) : 0,
-        outToFirst: diffFormatted(row.vehicle_out_time, firstFaultUTC),
-        lastToIn: diffFormatted(lastFaultUTC, row.vehicle_in_time),
+        percentNum,
+        outToFirst,
+        lastToIn,
         avgFault: avgFaultStr,
         maxFault: maxFaultStr,
-      }));
+      };
     });
 
     setOverallDetails(rows);
     setLoading(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ─────────────────────────────────────────
@@ -397,7 +341,7 @@ export default function Analysis() {
 
     const { data: dfData, error: dfError } = await supabase
       .from("daily_faults")
-      .select("member, total_assigned, total_finished, created_at");
+      .select("member, total_assigned, created_at");
 
     if (dfError) {
       console.error("fetchDailyData daily_faults error:", dfError.message);
@@ -409,48 +353,33 @@ export default function Analysis() {
       .from("fault_count")
       .select("member, assigned, created_at");
 
-    const fcRows = fcError ? [] : (fcData ?? []);
+    const fcRows      = fcError ? [] : (fcData ?? []);
     const assignedMap = buildAssignedMap(fcRows, dfData ?? []);
 
     const teamMap = {};
 
     filtered.forEach((row) => {
-      const rowMembers = Array.isArray(row.members)
-        ? row.members
-        : [row.members ?? "Unknown"];
+      const memberName = getMemberName(row.members);
+      const team       = row.team_name ?? "Unknown";
+      const dateKey    = toSLTDateKey(row.created_at);
+      const assigned   = assignedMap[`${memberName}__${dateKey}`] ?? 0;
 
-      const team = row.team_name ?? "Unknown";
-      const dateKey = toSLTDateKey(row.created_at);
-
-      const faults = Array.isArray(row.faults_time) ? row.faults_time : [];
+      const faults       = Array.isArray(row.faults_time) ? row.faults_time : [];
       const sortedFaults = [...faults].sort(
         (a, b) => new Date(a.completed_time) - new Date(b.completed_time)
       );
+      const finished = sortedFaults.length;
 
-      rowMembers.forEach((memberName) => {
-        const mapEntry = assignedMap[`${memberName}__${dateKey}`] ?? {
-          assigned: 0,
-          finished: 0,
-        };
+      if (!teamMap[team]) teamMap[team] = [];
 
-        const assigned = mapEntry.assigned;
-        const finished =
-          faults.length > 0 ? faults.length : mapEntry.finished;
-
-        if (!teamMap[team]) teamMap[team] = [];
-
-        teamMap[team].push({
-          date: toSLTDate(row.created_at),
-          member: memberName,
-          entries:
-            sortedFaults.length > 0
-              ? sortedFaults.map((f, idx) => ({
-                  time: toSLT(f.completed_time),
-                  value: `${assigned}/${f.fault_no ?? idx + 1}`,
-                }))
-              : [{ time: "—", value: `${assigned}/${finished}` }],
-          summary: `${assigned}/${finished}`,
-        });
+      teamMap[team].push({
+        date: toSLTDate(row.created_at),
+        member: memberName,
+        entries: sortedFaults.map((f, idx) => ({
+          time: toSLT(f.completed_time),
+          value: `${assigned}/${f.fault_no ?? idx + 1}`,
+        })),
+        summary: `${assigned}/${finished}`,
       });
     });
 
@@ -460,6 +389,7 @@ export default function Analysis() {
 
     setDailyTeams(teamsArray);
     setLoading(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ─────────────────────────────────────────
@@ -499,7 +429,8 @@ export default function Analysis() {
 
     const { data: dfData, error: dfError } = await supabase
       .from("daily_faults")
-      .select("member, total_assigned, total_finished, created_at");
+      .select("member, total_assigned, created_at")
+      .in("member", memberNames);
 
     if (dfError) {
       console.error("fetchMonthlySummary daily_faults error:", dfError.message);
@@ -512,35 +443,25 @@ export default function Analysis() {
       .select("member, assigned, created_at")
       .in("member", memberNames);
 
-    const fcRows = fcError ? [] : (fcData ?? []);
+    const fcRows      = fcError ? [] : (fcData ?? []);
     const assignedMap = buildAssignedMap(fcRows, dfData ?? []);
-
-    const memberMap = {};
+    const memberMap   = {};
 
     filtered.forEach((row) => {
       const memberName = getMemberName(row.members);
-      const teamName = row.team_name ?? "—";
-      const dateKey = toSLTDateKey(row.created_at);
-      const mapEntry = assignedMap[`${memberName}__${dateKey}`] ?? {
-        assigned: 0,
-        finished: 0,
-      };
+      const teamName   = row.team_name ?? "—";
+      const dateKey    = toSLTDateKey(row.created_at);
+      const assigned   = assignedMap[`${memberName}__${dateKey}`] ?? 0;
 
-      const assigned = mapEntry.assigned;
-      const faults = Array.isArray(row.faults_time) ? row.faults_time : [];
-      const finished =
-        faults.length > 0 ? faults.length : mapEntry.finished;
-
+      const faults       = Array.isArray(row.faults_time) ? row.faults_time : [];
+      const finished     = faults.length;
       const sortedFaults = [...faults].sort(
         (a, b) => new Date(a.completed_time) - new Date(b.completed_time)
       );
 
       const firstFaultUTC = sortedFaults[0]?.completed_time ?? null;
-      const lastFaultUTC =
-        sortedFaults[sortedFaults.length - 1]?.completed_time ?? null;
-
-      const dayPercent =
-        assigned > 0 ? Math.round((finished / assigned) * 100) : 0;
+      const lastFaultUTC  = sortedFaults[sortedFaults.length - 1]?.completed_time ?? null;
+      const dayPercent    = assigned > 0 ? Math.round((finished / assigned) * 100) : 0;
 
       const outToFirstMins =
         firstFaultUTC && row.vehicle_out_time
@@ -554,9 +475,7 @@ export default function Analysis() {
 
       const avgFaultMins =
         lastFaultUTC && row.vehicle_out_time && finished > 0
-          ? (new Date(lastFaultUTC) - new Date(row.vehicle_out_time)) /
-            finished /
-            60000
+          ? (new Date(lastFaultUTC) - new Date(row.vehicle_out_time)) / finished / 60000
           : null;
 
       let maxGapMs = 0;
@@ -588,15 +507,12 @@ export default function Analysis() {
       m.days.add(dateKey);
       m.totalAssigned += assigned;
       m.totalFinished += finished;
-      if (dayPercent > m.bestDayPercent) m.bestDayPercent = dayPercent;
+      if (dayPercent > m.bestDayPercent)  m.bestDayPercent  = dayPercent;
       if (dayPercent < m.worstDayPercent) m.worstDayPercent = dayPercent;
-      if (outToFirstMins !== null && outToFirstMins >= 0)
-        m.outToFirstMinsArr.push(outToFirstMins);
-      if (lastToInMins !== null && lastToInMins >= 0)
-        m.lastToInMinsArr.push(lastToInMins);
-      if (avgFaultMins !== null && avgFaultMins >= 0)
-        m.avgFaultMinsArr.push(avgFaultMins);
-      if (maxGapMins !== null) m.maxGapMinsArr.push(maxGapMins);
+      if (outToFirstMins !== null && outToFirstMins >= 0) m.outToFirstMinsArr.push(outToFirstMins);
+      if (lastToInMins   !== null && lastToInMins   >= 0) m.lastToInMinsArr.push(lastToInMins);
+      if (avgFaultMins   !== null && avgFaultMins   >= 0) m.avgFaultMinsArr.push(avgFaultMins);
+      if (maxGapMins     !== null)                        m.maxGapMinsArr.push(maxGapMins);
     });
 
     const avg = (arr) =>
@@ -622,14 +538,15 @@ export default function Analysis() {
           bestDayPercent: m.bestDayPercent,
           worstDayPercent: m.worstDayPercent === 100 ? 0 : m.worstDayPercent,
           avgOutToFirst: minsToFormatted(avg(m.outToFirstMinsArr)),
-          avgLastToIn: minsToFormatted(avg(m.lastToInMinsArr)),
-          avgFault: minsToFormatted(avg(m.avgFaultMinsArr)),
-          maxFaultEver: minsToFormatted(maxEver),
+          avgLastToIn:   minsToFormatted(avg(m.lastToInMinsArr)),
+          avgFault:      minsToFormatted(avg(m.avgFaultMinsArr)),
+          maxFaultEver:  minsToFormatted(maxEver),
         };
       });
 
     setMonthlySummary(summaryRows);
     setLoading(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ─────────────────────────────────────────
@@ -647,25 +564,13 @@ export default function Analysis() {
         .order("member_name");
       if (!mError) setMembersList(mData.map((m) => m.member_name));
 
-      const { data: tData, error: tError } = await supabase
-        .from("teams")
-        .select("team_name")
-        .order("team_name");
-      if (!tError) setTeamsList(tData.map((t) => t.team_name));
-
-      const { data: vData, error: vError } = await supabase
-        .from("vehicles")
-        .select("vehicle_number")
-        .order("vehicle_number");
-      if (!vError) setVehiclesList(vData.map((v) => v.vehicle_number));
-
       const { data: fwData, error: fwError } = await supabase
         .from("field_work")
         .select("created_at")
         .order("created_at");
       if (fwError) return;
 
-      const seen = new Set();
+      const seen         = new Set();
       const uniqueMonths = [];
       fwData.forEach((row) => {
         const label = toSLTMonthLabel(row.created_at);
@@ -684,6 +589,7 @@ export default function Analysis() {
     };
 
     init();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ─────────────────────────────────────────
@@ -693,157 +599,50 @@ export default function Analysis() {
   const handleMonthChange = (e) => {
     const month = e.target.value;
     setSelectedMonth(month);
-    if (activeTab === "overall") fetchOverallData(month, selectedMember);
-    if (activeTab === "daily") fetchDailyData(month);
+    if (activeTab === "overall")
+      fetchOverallData(month, selectedMember, comparisonMode ? selectedMembers : []);
+    if (activeTab === "daily")   fetchDailyData(month);
     if (activeTab === "monthly") fetchMonthlySummary(month);
   };
 
   const handleMemberChange = (e) => {
     const member = e.target.value;
     setSelectedMember(member);
-    fetchOverallData(selectedMonth, member);
+    fetchOverallData(selectedMonth, member, []);
   };
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
-    if (tab === "overall") fetchOverallData(selectedMonth, selectedMember);
-    if (tab === "daily") fetchDailyData(selectedMonth);
+    if (tab === "overall")
+      fetchOverallData(selectedMonth, selectedMember, comparisonMode ? selectedMembers : []);
+    if (tab === "daily")   fetchDailyData(selectedMonth);
     if (tab === "monthly") fetchMonthlySummary(selectedMonth);
   };
 
-  const openModal = () => {
-    setForm({
-      date: new Date().toISOString().split("T")[0],
-      team: "",
-      member: [],
-      vehicle: "",
-      vehicleOutTime: "",
-      vehicleInTime: "",
-      totalAssigned: "",
-      totalFinished: "",
-      firstFaultTime: "",
-      lastFaultTime: "",
-      avgFaultTime: "",
-      maxFaultTime: "",
-    });
-    setModalError("");
-    setModalSuccess("");
-    setShowModal(true);
+  // Toggle "Compare Members" mode on/off
+  const handleComparisonToggle = () => {
+    const next = !comparisonMode;
+    setComparisonMode(next);
+    if (!next) {
+      // turning OFF — go back to single-member view
+      setSelectedMembers([]);
+      fetchOverallData(selectedMonth, selectedMember, []);
+    } else {
+      // turning ON — start with nothing selected until user picks
+      setSelectedMembers([]);
+      setOverallDetails([]);
+    }
   };
 
-  const closeModal = () => {
-    setShowModal(false);
-    setModalError("");
-    setModalSuccess("");
-  };
-
-  const handleFormChange = (e) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = async () => {
-    setModalError("");
-    setModalSuccess("");
-
-    if (
-      !form.date ||
-      !form.team ||
-      form.member.length === 0 ||
-      !form.vehicle ||
-      !form.vehicleOutTime ||
-      !form.vehicleInTime ||
-      !form.totalAssigned ||
-      form.totalFinished === ""
-    ) {
-      setModalError("All fields are required.");
-      return;
-    }
-
-    const assigned = parseInt(form.totalAssigned);
-    const finished = parseInt(form.totalFinished);
-
-    if (assigned < 0 || finished < 0) {
-      setModalError("Assigned and Finished cannot be negative.");
-      return;
-    }
-
-    if (finished > assigned) {
-      setModalError("Finished cannot be more than Assigned.");
-      return;
-    }
-
-    setSubmitting(true);
-
-    const vehicleOutUTC = sltToUtc(form.date, form.vehicleOutTime);
-    const vehicleInUTC  = sltToUtc(form.date, form.vehicleInTime);
-    const createdAtUTC  = vehicleOutUTC;
-    const firstFaultUTC = sltToUtc(form.date, form.firstFaultTime);
-    const lastFaultUTC  = sltToUtc(form.date, form.lastFaultTime);
-
-    const { error: fwError } = await supabase.from("field_work").insert({
-      vehicle:          form.vehicle,
-      members:          form.member,
-      team_name:        form.team,
-      vehicle_out_time: vehicleOutUTC,
-      vehicle_in_time:  vehicleInUTC,
-      faults_time:      [],
-      total_faults:     finished,
-      status:           "Vehicle In",
-      completed_time:   vehicleInUTC,
-      finish_time:      vehicleInUTC,
-      created_at:       createdAtUTC,
-      first_fault_time: firstFaultUTC,
-      last_fault_time:  lastFaultUTC,
-      avg_fault_time:   form.avgFaultTime,
-      max_fault_time:   form.maxFaultTime,
+  // Add / remove a member from the comparison list — no limit on count
+  const handleMemberToggle = (member) => {
+    setSelectedMembers((prev) => {
+      const next = prev.includes(member)
+        ? prev.filter((m) => m !== member)
+        : [...prev, member];
+      fetchOverallData(selectedMonth, selectedMember, next);
+      return next;
     });
-
-    if (fwError) {
-      console.error("field_work insert error:", fwError.message);
-      setModalError(`Error saving field work: ${fwError.message}`);
-      setSubmitting(false);
-      return;
-    }
-
-    for (const memberName of form.member) {
-      const { error: dfError } = await supabase.from("daily_faults").insert({
-        team:            form.team,
-        member:          memberName,
-        total_assigned:  assigned,
-        total_finished:  finished,
-        created_at:      createdAtUTC,
-      });
-
-      if (dfError) {
-        console.error("daily_faults insert error:", dfError.message);
-        setModalError(`Error saving daily faults: ${dfError.message}`);
-        setSubmitting(false);
-        return;
-      }
-    }
-
-    setSubmitting(false);
-    setModalSuccess("Entry saved successfully!");
-
-    const entryMonth = new Date(createdAtUTC).toLocaleDateString("en-GB", {
-      timeZone: "Asia/Colombo",
-      month: "long",
-      year: "numeric",
-    });
-
-    if (!months.includes(entryMonth)) {
-      setMonths((prev) => [...prev, entryMonth].sort());
-    }
-
-    setSelectedMonth(entryMonth);
-
-    setTimeout(() => {
-      closeModal();
-      if (activeTab === "overall") fetchOverallData(entryMonth, selectedMember);
-      if (activeTab === "daily")   fetchDailyData(entryMonth);
-      if (activeTab === "monthly") fetchMonthlySummary(entryMonth);
-    }, 1200);
   };
 
   // ─────────────────────────────────────────
@@ -868,20 +667,16 @@ export default function Analysis() {
     return "#ef4444";
   };
 
-  const tickFormatter = (value) => {
-    if (typeof value === "string" && value.length > 10) {
-      return value.slice(0, 10) + "…";
-    }
-    return value;
-  };
+  const usingComparison = comparisonMode && selectedMembers.length > 0;
 
-  // ── Build chart data ──
+  // ── Single-member chart data (existing behaviour) ──
   const chartData = overallDetails.map((item) => ({
     label:          `${item.team} / ${item.member}`,
     date:           item.date,
+    shortName:      item.member.split(" ")[0],
     member:         item.member,
     team:           item.team,
-    percentNum:     item.percentNum ?? parseInt(item.percent) ?? 0,
+    percentNum:     item.percentNum ?? 0,
     assigned:       item.assigned  ?? 0,
     finished:       item.finished  ?? 0,
     outToFirstMins: parseMinutes(item.outToFirst),
@@ -890,17 +685,98 @@ export default function Analysis() {
     maxFaultMins:   parseMinutes(item.maxFault),
   }));
 
+  // ── Comparison chart data — pivoted by date, one column-set per member ──
+  const comparisonChartData = (() => {
+    if (!usingComparison) return [];
+    const dateMap = {};
+    overallDetails.forEach((item) => {
+      const key = item.date;
+      if (!dateMap[key]) {
+        dateMap[key] = { date: item.date, day: item.day };
+      }
+      const entry = dateMap[key];
+      entry[`${item.member}_percent`]     = item.percentNum ?? 0;
+      entry[`${item.member}_assigned`]    = item.assigned ?? 0;
+      entry[`${item.member}_finished`]    = item.finished ?? 0;
+      entry[`${item.member}_outToFirst`]  = parseMinutes(item.outToFirst);
+      entry[`${item.member}_lastToIn`]    = parseMinutes(item.lastToIn);
+      entry[`${item.member}_avgFault`]    = parseMinutes(item.avgFault);
+      entry[`${item.member}_maxFault`]    = parseMinutes(item.maxFault);
+    });
+    return Object.values(dateMap).sort(
+      (a, b) => dateSortKey(a.date).localeCompare(dateSortKey(b.date))
+    );
+  })();
+
   const barRadius = [4, 4, 0, 0];
 
-  const commonXAxis = (
+  // Shared X axis with angled labels — readable on phone and laptop
+  const SharedXAxis = (
     <XAxis
-      dataKey="member"
-      tick={{ fill: "#94a3b8", fontSize: 11 }}
-      angle={-35}
+      dataKey="shortName"
+      tick={{ fill: "#94a3b8", fontSize: 10 }}
+      angle={-40}
       textAnchor="end"
       interval={0}
-      tickFormatter={tickFormatter}
+      height={60}
     />
+  );
+
+  // X axis used in comparison mode — grouped by date instead of member
+  const ComparisonXAxis = (
+    <XAxis
+      dataKey="date"
+      tick={{ fill: "#94a3b8", fontSize: 10 }}
+      angle={-40}
+      textAnchor="end"
+      interval={0}
+      height={60}
+    />
+  );
+
+  // Reusable single-metric chart card — switches automatically between
+  // single-member view and multi-member comparison view
+  const MetricChart = ({ title, singleDataKey, singleName, singleFill, useCells, suffix, tooltip, unit }) => (
+    <div className="chart-card">
+      <h3>{title}</h3>
+      <ResponsiveContainer width="100%" height={280}>
+        <BarChart
+          data={usingComparison ? comparisonChartData : chartData}
+          margin={{ top: 10, right: 10, left: 0, bottom: 65 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+          {usingComparison ? ComparisonXAxis : SharedXAxis}
+          <YAxis
+            tick={{ fill: "#94a3b8", fontSize: 11 }}
+            tickFormatter={unit ? (v) => `${v}${unit}` : undefined}
+            domain={singleDataKey === "percentNum" && !usingComparison ? [0, 100] : undefined}
+          />
+          <Tooltip content={tooltip} />
+          {usingComparison && (
+            <Legend wrapperStyle={{ color: "#94a3b8", fontSize: 12, paddingTop: 4 }} />
+          )}
+          {usingComparison ? (
+            selectedMembers.map((m, i) => (
+              <Bar
+                key={m}
+                dataKey={`${m}_${suffix}`}
+                name={m}
+                fill={colorForIndex(i)}
+                radius={barRadius}
+              />
+            ))
+          ) : useCells ? (
+            <Bar dataKey={singleDataKey} name={singleName} radius={barRadius}>
+              {chartData.map((entry, i) => (
+                <Cell key={i} fill={getPercentColor(entry.percentNum)} />
+              ))}
+            </Bar>
+          ) : (
+            <Bar dataKey={singleDataKey} name={singleName} fill={singleFill} radius={barRadius} />
+          )}
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
   );
 
   // ─────────────────────────────────────────
@@ -915,6 +791,7 @@ export default function Analysis() {
         <p>Daily Detailed Report</p>
       </div>
 
+      {/* MAIN TABS */}
       <div className="analysis-tabs">
         <button
           className={activeTab === "overall" ? "active" : ""}
@@ -936,194 +813,268 @@ export default function Analysis() {
         </button>
       </div>
 
-      {/* ── OVERALL DETAIL ── */}
+      {/* ── OVERALL DETAIL TAB ── */}
       {activeTab === "overall" && (
         <>
+          {/* FILTERS ROW */}
           <div className="top-filters">
             <select value={selectedMonth} onChange={handleMonthChange}>
               {months.map((month) => (
                 <option key={month}>{month}</option>
               ))}
             </select>
-            <select value={selectedMember} onChange={handleMemberChange}>
-              <option>All Members</option>
-              {membersList.map((m) => (
-                <option key={m}>{m}</option>
-              ))}
-            </select>
-            <button className="add-entry-btn" onClick={openModal}>
-              + Add Entry
-            </button>
-          </div>
 
-          {/* TABLE */}
-          <div className="analysis-card">
-            <h2>FAULT ANALYSIS BY SERVICE NUMBER (Every Works)</h2>
-            {loading ? (
-              <div className="loading-state">Loading...</div>
-            ) : (
-              <div className="table-container">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>DATE</th>
-                      <th>DAY</th>
-                      <th>TEAM</th>
-                      <th>MEMBER</th>
-                      <th>IN</th>
-                      <th>OUT</th>
-                      <th>VEHICLE</th>
-                      <th>VEHICLE OUT</th>
-                      <th>1ST FAULT</th>
-                      <th>LAST FAULT</th>
-                      <th>SUMMARY</th>
-                      <th>%</th>
-                      <th>OUT → 1ST</th>
-                      <th>LAST → IN</th>
-                      <th>AVG / FAULT</th>
-                      <th>MAXIMUM TIME TAKEN FOR A FAULT</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {overallDetails.length === 0 ? (
-                      <tr>
-                        <td colSpan="16" className="empty-cell">No Data</td>
-                      </tr>
-                    ) : (
-                      overallDetails.map((item, index) => (
-                        <tr key={index}>
-                          <td>{item.date}</td>
-                          <td>{item.day}</td>
-                          <td>{item.team}</td>
-                          <td>{item.member}</td>
-                          <td>{item.in}</td>
-                          <td>{item.out}</td>
-                          <td>{item.vehicle}</td>
-                          <td>{item.vehicleOut}</td>
-                          <td>{item.firstFault}</td>
-                          <td>{item.lastFault}</td>
-                          <td>{item.summary}</td>
-                          <td className={getColorClass(parseInt(item.percent))}>
-                            {item.percent}
-                          </td>
-                          <td className="yellow_vf">{item.outToFirst}</td>
-                          <td className="orange_vf">{item.lastToIn}</td>
-                          <td className="pink_vf">{item.avgFault}</td>
-                          <td className="max_fault">{item.maxFault}</td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+            {!comparisonMode && (
+              <select value={selectedMember} onChange={handleMemberChange}>
+                <option>All Members</option>
+                {membersList.map((m) => (
+                  <option key={m}>{m}</option>
+                ))}
+              </select>
             )}
+
+            <button
+              className={`compare-btn ${comparisonMode ? "toggle-active" : ""}`}
+              onClick={handleComparisonToggle}
+            >
+              🔀 Compare Members
+            </button>
+
+            {/* VIEW TOGGLE */}
+            <div className="view-toggle">
+              <button
+                className={overallView === "table" ? "toggle-active" : ""}
+                onClick={() => setOverallView("table")}
+              >
+                📋 Table View
+              </button>
+              <button
+                className={overallView === "chart" ? "toggle-active" : ""}
+                onClick={() => setOverallView("chart")}
+              >
+                📊 Chart View
+              </button>
+            </div>
           </div>
 
-          {/* ── BAR CHARTS ── */}
-          {!loading && chartData.length > 0 && (
-            <div className="charts-section">
-
-              <h2 className="charts-title">📊 Bar Chart Comparison</h2>
-
-              <div className="charts-grid">
-
-                {/* CHART 1 — Completion % */}
-                <div className="chart-card">
-                  <h3>Completion %</h3>
-                  <ResponsiveContainer width="100%" height={260}>
-                    <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 60 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
-                      {commonXAxis}
-                      <YAxis tick={{ fill: "#94a3b8", fontSize: 11 }} domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
-                      <Tooltip content={TooltipPercent} />
-                      <Bar dataKey="percentNum" name="Completion %" radius={barRadius}>
-                        {chartData.map((entry, i) => (
-                          <Cell key={i} fill={getPercentColor(entry.percentNum)} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-
-                {/* CHART 2 — Assigned vs Finished */}
-                <div className="chart-card">
-                  <h3>Assigned vs Finished</h3>
-                  <ResponsiveContainer width="100%" height={260}>
-                    <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 60 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
-                      {commonXAxis}
-                      <YAxis tick={{ fill: "#94a3b8", fontSize: 11 }} />
-                      <Tooltip content={TooltipPlain} />
-                      <Legend wrapperStyle={{ color: "#94a3b8", fontSize: 12 }} />
-                      <Bar dataKey="assigned" name="Assigned" fill="#3b82f6" radius={barRadius} />
-                      <Bar dataKey="finished" name="Finished" fill="#22c55e" radius={barRadius} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-
-                {/* CHART 3 — OUT → 1ST FAULT */}
-                <div className="chart-card">
-                  <h3>Out → 1st Fault (mins)</h3>
-                  <ResponsiveContainer width="100%" height={260}>
-                    <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 60 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
-                      {commonXAxis}
-                      <YAxis tick={{ fill: "#94a3b8", fontSize: 11 }} tickFormatter={(v) => `${v}m`} />
-                      <Tooltip content={TooltipMins} />
-                      <Bar dataKey="outToFirstMins" name="Out → 1st" fill="#facc15" radius={barRadius} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-
-                {/* CHART 4 — LAST → IN */}
-                <div className="chart-card">
-                  <h3>Last Fault → In (mins)</h3>
-                  <ResponsiveContainer width="100%" height={260}>
-                    <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 60 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
-                      {commonXAxis}
-                      <YAxis tick={{ fill: "#94a3b8", fontSize: 11 }} tickFormatter={(v) => `${v}m`} />
-                      <Tooltip content={TooltipMins} />
-                      <Bar dataKey="lastToInMins" name="Last → In" fill="#fb923c" radius={barRadius} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-
-                {/* CHART 5 — AVG / FAULT */}
-                <div className="chart-card">
-                  <h3>Avg / Fault (mins)</h3>
-                  <ResponsiveContainer width="100%" height={260}>
-                    <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 60 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
-                      {commonXAxis}
-                      <YAxis tick={{ fill: "#94a3b8", fontSize: 11 }} tickFormatter={(v) => `${v}m`} />
-                      <Tooltip content={TooltipMins} />
-                      <Bar dataKey="avgFaultMins" name="Avg / Fault" fill="#ff3ef7" radius={barRadius} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-
-                {/* CHART 6 — MAX FAULT TIME */}
-                <div className="chart-card">
-                  <h3>Max Fault Time (mins)</h3>
-                  <ResponsiveContainer width="100%" height={260}>
-                    <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 60 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
-                      {commonXAxis}
-                      <YAxis tick={{ fill: "#94a3b8", fontSize: 11 }} tickFormatter={(v) => `${v}m`} />
-                      <Tooltip content={TooltipMins} />
-                      <Bar dataKey="maxFaultMins" name="Max Fault" fill="#00d4ff" radius={barRadius} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-
+          {/* MEMBER PICKER — shown only in comparison mode */}
+          {comparisonMode && (
+            <div className="member-picker">
+              <div className="member-picker-header">
+                Select members to compare ({selectedMembers.length} selected)
+              </div>
+              <div className="member-picker-list">
+                {membersList.map((m, i) => {
+                  const idx = selectedMembers.indexOf(m);
+                  const checked = idx !== -1;
+                  return (
+                    <label
+                      key={m}
+                      className={`member-chip ${checked ? "checked" : ""}`}
+                      style={checked ? { borderColor: colorForIndex(idx), color: colorForIndex(idx) } : undefined}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => handleMemberToggle(m)}
+                      />
+                      {m}
+                    </label>
+                  );
+                })}
               </div>
             </div>
+          )}
+
+          {/* ── TABLE VIEW ── */}
+          {overallView === "table" && (
+            <div className="analysis-card">
+              <h2>FAULT ANALYSIS </h2>
+              {loading ? (
+                <div className="loading-state">Loading...</div>
+              ) : comparisonMode && selectedMembers.length === 0 ? (
+                <div className="loading-state">Select at least one member to compare</div>
+              ) : (
+                <div className="table-container">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>DATE</th>
+                        <th>DAY</th>
+                        <th>TEAM</th>
+                        <th>MEMBER</th>
+                        <th>IN</th>
+                        <th>OUT</th>
+                        <th>VEHICLE</th>
+                        <th>VEHICLE OUT</th>
+                        <th>1ST FAULT</th>
+                        <th>LAST FAULT</th>
+                        <th>SUMMARY</th>
+                        <th>%</th>
+                        <th>OUT → 1ST</th>
+                        <th>LAST → IN</th>
+                        <th>AVG/FAULT</th>
+                        <th>MAXIMUM TIME TAKEN FOR A FAULT</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {overallDetails.length === 0 ? (
+                        <tr>
+                          <td colSpan="16" className="empty-cell">No Data</td>
+                        </tr>
+                      ) : (
+                        overallDetails.map((item, index) => {
+                          const memberIdx = selectedMembers.indexOf(item.member);
+                          return (
+                            <tr key={index}>
+                              <td>{item.date}</td>
+                              <td>{item.day}</td>
+                              <td>{item.team}</td>
+                              <td>
+                                {comparisonMode && memberIdx !== -1 ? (
+                                  <span
+                                    className="member-dot"
+                                    style={{ background: colorForIndex(memberIdx) }}
+                                  />
+                                ) : null}
+                                {item.member}
+                              </td>
+                              <td>{item.in}</td>
+                              <td>{item.out}</td>
+                              <td>{item.vehicle}</td>
+                              <td>{item.vehicleOut}</td>
+                              <td>{item.firstFault}</td>
+                              <td>{item.lastFault}</td>
+                              <td>{item.summary}</td>
+                              <td className={getColorClass(parseInt(item.percent))}>
+                                {item.percent}
+                              </td>
+                              <td className="yellow_vf">{item.outToFirst}</td>
+                              <td className="orange_vf">{item.lastToIn}</td>
+                              <td className="pink_vf">{item.avgFault}</td>
+                              <td className="max_fault">{item.maxFault}</td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── CHART VIEW ── */}
+          {overallView === "chart" && (
+            <>
+              {loading ? (
+                <div className="loading-state">Loading...</div>
+              ) : comparisonMode && selectedMembers.length === 0 ? (
+                <div className="loading-state">Select at least one member to compare</div>
+              ) : chartData.length === 0 && !usingComparison ? (
+                <div className="loading-state">No Data</div>
+              ) : (
+                <div className="charts-grid">
+
+                  <MetricChart
+                    title="Completion %"
+                    singleDataKey="percentNum"
+                    singleName="Completion %"
+                    useCells
+                    suffix="percent"
+                    tooltip={TooltipPercent}
+                    unit="%"
+                  />
+
+                  {/* Assigned vs Finished needs two bars per member, handled separately */}
+                  <div className="chart-card">
+                    <h3>Assigned vs Finished</h3>
+                    <ResponsiveContainer width="100%" height={280}>
+                      <BarChart
+                        data={usingComparison ? comparisonChartData : chartData}
+                        margin={{ top: 10, right: 10, left: 0, bottom: 65 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                        {usingComparison ? ComparisonXAxis : SharedXAxis}
+                        <YAxis tick={{ fill: "#94a3b8", fontSize: 11 }} />
+                        <Tooltip content={TooltipPlain} />
+                        <Legend wrapperStyle={{ color: "#94a3b8", fontSize: 12, paddingTop: 4 }} />
+                        {usingComparison ? (
+                          selectedMembers.flatMap((m, i) => ([
+                            <Bar
+                              key={`${m}-a`}
+                              dataKey={`${m}_assigned`}
+                              name={`${m} Assigned`}
+                              fill={colorForIndex(i)}
+                              radius={barRadius}
+                            />,
+                            <Bar
+                              key={`${m}-f`}
+                              dataKey={`${m}_finished`}
+                              name={`${m} Finished`}
+                              fill={colorForIndex(i)}
+                              fillOpacity={0.45}
+                              radius={barRadius}
+                            />,
+                          ]))
+                        ) : (
+                          <>
+                            <Bar dataKey="assigned" name="Assigned" fill="#3b82f6" radius={barRadius} />
+                            <Bar dataKey="finished"  name="Finished"  fill="#22c55e" radius={barRadius} />
+                          </>
+                        )}
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  <MetricChart
+                    title="Out → 1st Fault (mins)"
+                    singleDataKey="outToFirstMins"
+                    singleName="Out → 1st"
+                    singleFill="#facc15"
+                    suffix="outToFirst"
+                    tooltip={TooltipMins}
+                    unit="m"
+                  />
+
+                  <MetricChart
+                    title="Last Fault → In (mins)"
+                    singleDataKey="lastToInMins"
+                    singleName="Last → In"
+                    singleFill="#fb923c"
+                    suffix="lastToIn"
+                    tooltip={TooltipMins}
+                    unit="m"
+                  />
+
+                  <MetricChart
+                    title="Avg / Fault (mins)"
+                    singleDataKey="avgFaultMins"
+                    singleName="Avg / Fault"
+                    singleFill="#ff3ef7"
+                    suffix="avgFault"
+                    tooltip={TooltipMins}
+                    unit="m"
+                  />
+
+                  <MetricChart
+                    title="Max Fault Time (mins)"
+                    singleDataKey="maxFaultMins"
+                    singleName="Max Fault"
+                    singleFill="#00d4ff"
+                    suffix="maxFault"
+                    tooltip={TooltipMins}
+                    unit="m"
+                  />
+
+                </div>
+              )}
+            </>
           )}
         </>
       )}
 
-      {/* ── DAILY FAULT ANALYSIS ── */}
+      {/* ── DAILY FAULT ANALYSIS TAB ── */}
       {activeTab === "daily" && (
         <>
           <div className="top-filters">
@@ -1148,7 +1099,7 @@ export default function Analysis() {
                           <th>DATE</th>
                           <th>MEMBER</th>
                           <th>TIME</th>
-                          <th>ULT / ATT</th>
+                          <th>ULT/ATT</th>
                           <th>SUMMARY</th>
                           <th>COMPLETION %</th>
                         </tr>
@@ -1191,7 +1142,7 @@ export default function Analysis() {
         </>
       )}
 
-      {/* ── MONTHLY SUMMARY ── */}
+      {/* ── MONTHLY SUMMARY TAB ── */}
       {activeTab === "monthly" && (
         <>
           <div className="top-filters">
@@ -1258,106 +1209,6 @@ export default function Analysis() {
             )}
           </div>
         </>
-      )}
-
-      {/* ── MODAL ── */}
-      {showModal && (
-        <div className="modal-overlay" onClick={closeModal}>
-          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-            <h2>Add Field Work Entry</h2>
-
-            <div className="modal-grid">
-
-              <div className="modal-field">
-                <label>Date</label>
-                <input type="date" name="date" value={form.date} onChange={handleFormChange} />
-              </div>
-
-              <div className="modal-field">
-                <label>Team</label>
-                <select name="team" value={form.team} onChange={handleFormChange}>
-                  <option value="">Select Team</option>
-                  {teamsList.map((t) => (<option key={t}>{t}</option>))}
-                </select>
-              </div>
-
-              <div className="modal-field full-width">
-                <label>Member</label>
-                <Select
-                  isMulti
-                  classNamePrefix="react-select"
-                  options={membersList.map((m) => ({ value: m, label: m }))}
-                  value={form.member.map((m) => ({ value: m, label: m }))}
-                  onChange={(selected) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      member: selected ? selected.map((s) => s.value) : [],
-                    }))
-                  }
-                />
-              </div>
-
-              <div className="modal-field">
-                <label>Vehicle</label>
-                <select name="vehicle" value={form.vehicle} onChange={handleFormChange}>
-                  <option value="">Select Vehicle</option>
-                  {vehiclesList.map((v) => (<option key={v}>{v}</option>))}
-                </select>
-              </div>
-
-              <div className="modal-field">
-                <label>Vehicle Out Time (SLT)</label>
-                <input type="time" name="vehicleOutTime" value={form.vehicleOutTime} onChange={handleFormChange} />
-              </div>
-
-              <div className="modal-field">
-                <label>Vehicle In Time (SLT)</label>
-                <input type="time" name="vehicleInTime" value={form.vehicleInTime} onChange={handleFormChange} />
-              </div>
-
-              <div className="modal-field">
-                <label>Total Assigned</label>
-                <input type="number" name="totalAssigned" placeholder="10" min="0" value={form.totalAssigned} onChange={handleFormChange} />
-              </div>
-
-              <div className="modal-field">
-                <label>Total Finished</label>
-                <input type="number" name="totalFinished" placeholder="8" min="0" value={form.totalFinished} onChange={handleFormChange} />
-              </div>
-
-              <div className="modal-field">
-                <label>1st Fault Time (SLT)</label>
-                <input type="time" name="firstFaultTime" value={form.firstFaultTime} onChange={handleFormChange} />
-              </div>
-
-              <div className="modal-field">
-                <label>Last Fault Time (SLT)</label>
-                <input type="time" name="lastFaultTime" value={form.lastFaultTime} onChange={handleFormChange} />
-              </div>
-
-              <div className="modal-field">
-                <label>Avg / Fault</label>
-                <input type="text" name="avgFaultTime" placeholder="30m" value={form.avgFaultTime} onChange={handleFormChange} />
-              </div>
-
-              <div className="modal-field">
-                <label>Max Fault Time</label>
-                <input type="text" name="maxFaultTime" placeholder="1h 30m" value={form.maxFaultTime} onChange={handleFormChange} />
-              </div>
-
-            </div>
-
-            {modalError   && <div className="modal-error">{modalError}</div>}
-            {modalSuccess && <div className="modal-success">{modalSuccess}</div>}
-
-            <div className="modal-actions">
-              <button className="modal-cancel" onClick={closeModal}>Cancel</button>
-              <button className="modal-submit" onClick={handleSubmit} disabled={submitting}>
-                {submitting ? "Saving..." : "Save Entry"}
-              </button>
-            </div>
-          </div>
-        </div>
       )}
 
     </div>
