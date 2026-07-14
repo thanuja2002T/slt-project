@@ -44,6 +44,70 @@ const MEMBER_COLORS = [
 ];
 const colorForIndex = (i) => MEMBER_COLORS[i % MEMBER_COLORS.length];
 
+const barRadius = [4, 4, 0, 0];
+
+// Reusable single-metric chart card — declared OUTSIDE Analysis so it isn't
+// re-created on every render (fixes "Components created during render").
+// Everything it needs is passed in as props.
+const MetricChart = ({
+  title,
+  singleDataKey,
+  singleName,
+  singleFill,
+  useCells,
+  suffix,
+  tooltip,
+  unit,
+  usingComparison,
+  comparisonChartData,
+  chartData,
+  selectedMembers,
+  SharedXAxis,
+  ComparisonXAxis,
+  getPercentColor,
+}) => (
+  <div className="chart-card">
+    <h3>{title}</h3>
+    <ResponsiveContainer width="100%" height={280}>
+      <BarChart
+        data={usingComparison ? comparisonChartData : chartData}
+        margin={{ top: 10, right: 10, left: 0, bottom: 65 }}
+      >
+        <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+        {usingComparison ? ComparisonXAxis : SharedXAxis}
+        <YAxis
+          tick={{ fill: "#94a3b8", fontSize: 11 }}
+          tickFormatter={unit ? (v) => `${v}${unit}` : undefined}
+          domain={singleDataKey === "percentNum" && !usingComparison ? [0, 100] : undefined}
+        />
+        <Tooltip content={tooltip} />
+        {usingComparison && (
+          <Legend wrapperStyle={{ color: "#94a3b8", fontSize: 12, paddingTop: 4 }} />
+        )}
+        {usingComparison ? (
+          selectedMembers.map((m, i) => (
+            <Bar
+              key={m}
+              dataKey={`${m}_${suffix}`}
+              name={m}
+              fill={colorForIndex(i)}
+              radius={barRadius}
+            />
+          ))
+        ) : useCells ? (
+          <Bar dataKey={singleDataKey} name={singleName} radius={barRadius}>
+            {chartData.map((entry, i) => (
+              <Cell key={i} fill={getPercentColor(entry.percentNum)} />
+            ))}
+          </Bar>
+        ) : (
+          <Bar dataKey={singleDataKey} name={singleName} fill={singleFill} radius={barRadius} />
+        )}
+      </BarChart>
+    </ResponsiveContainer>
+  </div>
+);
+
 // ─────────────────────────────────────────
 
 export default function Analysis() {
@@ -708,8 +772,6 @@ export default function Analysis() {
     );
   })();
 
-  const barRadius = [4, 4, 0, 0];
-
   // Shared X axis with angled labels — readable on phone and laptop
   const SharedXAxis = (
     <XAxis
@@ -732,51 +794,6 @@ export default function Analysis() {
       interval={0}
       height={60}
     />
-  );
-
-  // Reusable single-metric chart card — switches automatically between
-  // single-member view and multi-member comparison view
-  const MetricChart = ({ title, singleDataKey, singleName, singleFill, useCells, suffix, tooltip, unit }) => (
-    <div className="chart-card">
-      <h3>{title}</h3>
-      <ResponsiveContainer width="100%" height={280}>
-        <BarChart
-          data={usingComparison ? comparisonChartData : chartData}
-          margin={{ top: 10, right: 10, left: 0, bottom: 65 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
-          {usingComparison ? ComparisonXAxis : SharedXAxis}
-          <YAxis
-            tick={{ fill: "#94a3b8", fontSize: 11 }}
-            tickFormatter={unit ? (v) => `${v}${unit}` : undefined}
-            domain={singleDataKey === "percentNum" && !usingComparison ? [0, 100] : undefined}
-          />
-          <Tooltip content={tooltip} />
-          {usingComparison && (
-            <Legend wrapperStyle={{ color: "#94a3b8", fontSize: 12, paddingTop: 4 }} />
-          )}
-          {usingComparison ? (
-            selectedMembers.map((m, i) => (
-              <Bar
-                key={m}
-                dataKey={`${m}_${suffix}`}
-                name={m}
-                fill={colorForIndex(i)}
-                radius={barRadius}
-              />
-            ))
-          ) : useCells ? (
-            <Bar dataKey={singleDataKey} name={singleName} radius={barRadius}>
-              {chartData.map((entry, i) => (
-                <Cell key={i} fill={getPercentColor(entry.percentNum)} />
-              ))}
-            </Bar>
-          ) : (
-            <Bar dataKey={singleDataKey} name={singleName} fill={singleFill} radius={barRadius} />
-          )}
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
   );
 
   // ─────────────────────────────────────────
@@ -864,7 +881,7 @@ export default function Analysis() {
                 Select members to compare ({selectedMembers.length} selected)
               </div>
               <div className="member-picker-list">
-                {membersList.map((m, i) => {
+                {membersList.map((m) => {
                   const idx = selectedMembers.indexOf(m);
                   const checked = idx !== -1;
                   return (
@@ -984,6 +1001,13 @@ export default function Analysis() {
                     suffix="percent"
                     tooltip={TooltipPercent}
                     unit="%"
+                    usingComparison={usingComparison}
+                    comparisonChartData={comparisonChartData}
+                    chartData={chartData}
+                    selectedMembers={selectedMembers}
+                    SharedXAxis={SharedXAxis}
+                    ComparisonXAxis={ComparisonXAxis}
+                    getPercentColor={getPercentColor}
                   />
 
                   {/* Assigned vs Finished needs two bars per member, handled separately */}
@@ -1035,6 +1059,13 @@ export default function Analysis() {
                     suffix="outToFirst"
                     tooltip={TooltipMins}
                     unit="m"
+                    usingComparison={usingComparison}
+                    comparisonChartData={comparisonChartData}
+                    chartData={chartData}
+                    selectedMembers={selectedMembers}
+                    SharedXAxis={SharedXAxis}
+                    ComparisonXAxis={ComparisonXAxis}
+                    getPercentColor={getPercentColor}
                   />
 
                   <MetricChart
@@ -1045,6 +1076,13 @@ export default function Analysis() {
                     suffix="lastToIn"
                     tooltip={TooltipMins}
                     unit="m"
+                    usingComparison={usingComparison}
+                    comparisonChartData={comparisonChartData}
+                    chartData={chartData}
+                    selectedMembers={selectedMembers}
+                    SharedXAxis={SharedXAxis}
+                    ComparisonXAxis={ComparisonXAxis}
+                    getPercentColor={getPercentColor}
                   />
 
                   <MetricChart
@@ -1055,6 +1093,13 @@ export default function Analysis() {
                     suffix="avgFault"
                     tooltip={TooltipMins}
                     unit="m"
+                    usingComparison={usingComparison}
+                    comparisonChartData={comparisonChartData}
+                    chartData={chartData}
+                    selectedMembers={selectedMembers}
+                    SharedXAxis={SharedXAxis}
+                    ComparisonXAxis={ComparisonXAxis}
+                    getPercentColor={getPercentColor}
                   />
 
                   <MetricChart
@@ -1065,6 +1110,13 @@ export default function Analysis() {
                     suffix="maxFault"
                     tooltip={TooltipMins}
                     unit="m"
+                    usingComparison={usingComparison}
+                    comparisonChartData={comparisonChartData}
+                    chartData={chartData}
+                    selectedMembers={selectedMembers}
+                    SharedXAxis={SharedXAxis}
+                    ComparisonXAxis={ComparisonXAxis}
+                    getPercentColor={getPercentColor}
                   />
 
                 </div>
